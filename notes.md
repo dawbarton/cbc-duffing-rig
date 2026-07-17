@@ -73,3 +73,9 @@
 - `helic-drivers/src/ad5064.rs`: added `WORD_SETTLE_US = 3` (used by `zero_all_with_delay`) and `write_volts_with_delay(setpoints, delay)`; documented on `write_code`/`write_volts` that they are single unspaced words needing the inter-word delay when called back-to-back (pointing to the batch helpers), so future agents spot the requirement; expanded the module timing note; added a spacing unit test.
 - `cbc-rig` `init()` now defines all four channels in one spaced pass via the driver method: C and A at the common-mode reference (C first so A settles last), B and D at 0 V. Removed the local helper and its constant.
 - Verified: root fmt/clippy/`cargo test -p helic-drivers` (incl. new `write_volts_with_delay_spaces_between_words_only`), firmware fmt/clippy/build for W5500+W6100, RT-layout. On hardware (exciter/laser off) `6f82ffc` boots with no DAC warning; after `diag_reset` overruns/tick_timeouts/cmd_backlog_max = 0, clock_jitter 1 us (documented baseline), loop_time_max 35 us; `rig_out_channel` still rejects B/C; a 0.05 V pp logical sine streams symmetric about zero with no loss; left quiescent.
+
+## 2026-07-17T22:46+00:00 Split firmware detail into docs/firmware-guide.md
+
+- Per David's steer that the firmware should stay largely fixed while experiments run, moved the firmware technical detail out of `quick-start.md` into a new `docs/firmware-guide.md` (build/flash/verify, differential DAC drive, AD5064 timing, compile-time config, known gaps).
+- Rewrote `quick-start.md` to focus on running experiments over the host API: CLI commands, the Fourier-series/table excitation model, capturable sources, safe operating points, health check, physical-state caveats, sanity numbers.
+- Added a pointer from `AGENTS.md` to `docs/firmware-guide.md` and clarified quick-start vs guide roles.

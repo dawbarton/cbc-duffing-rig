@@ -20,6 +20,8 @@ The interface to the experiment is provided via the helic-daq (`helic-daq/`), wh
 
 Helic-daq is intended to be a multi-experiment platform, and the firmware is designed to be flexible. You may modify the `cbc-rig` firmware but not any of the other code (e.g., drivers, core, etc) since it is used by other experiments. Distinguish between hard constraints (typically safety constraints) that must be enforced at firmware level and soft constraints that may rely on correct implementation in user scripts.
 
+The firmware is expected to remain largely fixed as experiments run. Technical details of the `cbc-rig` firmware — build/flash/verify procedure, the differential DAC drive and signal conventions, compile-time configuration, and known gaps — are documented in `docs/firmware-guide.md`. `quick-start.md` covers day-to-day operation of the experiment over the host API.
+
 ADC channels used are:
 - 0: measured (low fidelity) current output to the electromagnetic exciter
 - 1-7: unused
