@@ -46,3 +46,16 @@
 - Selected live parameters: `rig_out_channel = 0.0`, `freq = 0.0`, `table_len = 0`, `table_mode = 0`, `laser ~= 24.819 mm`, `loop_time_max = 34 us`.
 - One short decimated stream capture of `adc0,laser,out,cmd_epoch` recorded 1000 records with no UDP loss. `out` and `cmd_epoch` stayed exactly zero; `adc0` mean was about 0.491 V with 5 mV peak-to-peak; laser peak-to-peak was about 0.0023 mm.
 - Report written to `/workspace/cbc-duffing-rig/reports/2026-07-17-cbc-rig-review/report.md`; raw capture and plot stored at `/workspace/cbc-duffing-rig/data/2026-07-17-daq-readonly-capture.npz` and `/workspace/cbc-duffing-rig/results/2026-07-17-daq-readonly-capture.png`.
+
+## 2026-07-17T22:46+00:00 Differential DAC drive implemented and flashed
+
+- Implemented the AGENTS.md differential drive scheme in `cbc-rig` (helic-daq commit `813170f`), replacing the previous single-ended output. Changes in `firmware/experiments/cbc-rig/src/rig.rs` only:
+  - Added `MID_RAIL = DAC_VREF/2 = 2.048 V` and `NEG_REF_CHANNEL = 2` (channel C).
+  - `init()`: after `zero_all`, hold C at `MID_RAIL` and park A at `MID_RAIL` so the differential rest state (A - C) is zero, avoiding a one-tick full-scale negative kick between init and the first `actuate`.
+  - `actuate()`: write `MID_RAIL + out` (no sign inversion). Streamed `out` remains the signed differential command; DAC driver still clamps to 0-4.096 V.
+  - `normalise_param`: lock `rig_out_channel` to channel A (0); reject broken B (1) and the C reference (2).
+- David's decisions (via question prompt): common-mode 2.048 V exact half-scale; no sign/gain inversion (A up = more drive); 2 V pp remains a soft/host limit (no firmware clamp for now).
+- Offline verification passed: `cargo fmt --check`, release clippy `-D warnings` and release build for both W5500 (default) and W6100, and `tools/check_rt_layout.py` (hot symbols `measure`/`actuate` still in SRAM).
+- Live verification with exciter and laser power OFF: flashed via `probe-rs`/`cargo run`; clean boot, network up at 192.168.1.235, RT loop 8 kHz with no overruns/tick-timeouts and no "DAC common-mode setup failed" warning (both init writes succeeded). `rig_out_channel` set to 1 and 2 both rejected ("bad value"); 0 accepted. A 0.05 V pp logical sine (amplitude 0.025 V, 2 Hz) streamed back symmetric about zero (out min/max ±0.025, mean 0.0000); adc0 quiescent (~0.38 V, no current, power off); laser 0 (power off); no UDP loss. Forcing then zeroed; device left quiescent on committed build `813170f`.
+- Note: `probe-rs download` + `probe-rs reset` left the core in a non-serving state; `cargo run` (`probe-rs run`) flashed and reset cleanly. Use the cargo runner for flashing.
+- OUTSTANDING before powering the exciter: David to confirm electrically (scope) that A - C is bipolar and non-inverting against the current-controller input. Software cannot verify DAC pin voltages. Capture saved at `shared`-free scratch only (not retained).
