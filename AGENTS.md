@@ -30,6 +30,17 @@ DAC channels used are:
 
 Since the DAC is unipolar (output between 0 and 4.096V), DAC output channel C should be set to approximately 50% range (i.e., 2V) and only DAC output channel A varied.
 
+## Health Monitoring
+
+The firmware exposes read-only real-time diagnostics that must be checked routinely for anomalies — after every flash, before and after each capture, and periodically during long runs — before trusting data or energising the actuator. See the helic-daq repository notes (`helic-daq/notes.md`) for expected healthy baselines (steady-state zero fault counters, ~36 us wake phase, loop maxima in the 33-47 us range at 8 kHz). Read via `helic-daq status` / `helic-daq get <name>`:
+
+- `overruns`, `tick_timeouts`, `clock_jitter` — must remain 0 in steady state; any growth means the real-time loop is missing its deadline or the sample clock is drifting.
+- `loop_time_last` / `loop_time_max`, `wake_phase_min` / `wake_phase_max`, `t_measure_max` / `t_actuate_max` / `t_rest_max` — per-tick timing budget (125 us at 8 kHz); watch for maxima approaching the tick period.
+- `cmd_backlog_max`, `records_dropped` — command/streaming backpressure. `records_dropped` accrues a fixed startup count before a UDP consumer first connects; only further growth during a capture is an anomaly.
+- `laser_uart_errors`, `laser_parse_errors`, `laser_invalid_frames`, `laser_unexpected_values`, `laser_sync_errors` — laser link health.
+
+Use `helic-daq set diag_reset 1` to clear the min/max and counter trackers immediately before a measurement so readings pertain to that run. Investigate any nonzero fault counter or timing maximum near the tick period before proceeding.
+
 ## Behavioural Standards
 
 - Flag assumptions that may not hold, approximations that may be too coarse, and conclusions that outrun the evidence.
