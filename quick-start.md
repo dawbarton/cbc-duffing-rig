@@ -34,7 +34,7 @@ monitoring). This file is for how-to detail, not repetition of those.
   `actuate` hot symbols in SRAM). The `proc-macro-error2` future-incompat
   warning is a pre-existing dependency issue, not from our code.
 
-## Exciter drive semantics (differential DAC, since helic-daq ba8748c)
+## Exciter drive semantics (differential DAC, since helic-daq 6f82ffc)
 
 - Current controller input is differential: DAC A (positive) minus DAC C
   (negative). Firmware holds C at `MID_RAIL = DAC_VREF/2 = 2.048 V` and biases
@@ -46,9 +46,10 @@ monitoring). This file is for how-to detail, not repetition of those.
 - The DAC driver clamps the final A voltage to 0-4.096 V, so a logical `out`
   beyond +/-2.048 V silently saturates. There is NO firmware amplitude clamp;
   the 2 V pp limit is a soft/host responsibility for now.
-- AD5064 needs ~3 us between sequential SPI words; startup writes use
-  `write_dac_channels_spaced`. One-per-tick hot-path writes are naturally
-  spaced by the 125 us tick.
+- AD5064 needs ~3 us between sequential SPI words (`WORD_SETTLE_US` in the
+  driver); batch/startup writes use `Ad5064::write_volts_with_delay`, and the
+  single-word `write_volts`/`write_code` carry a doc warning about it.
+  One-per-tick hot-path writes are naturally spaced by the 125 us tick.
 
 ## Current physical state / caveats (as of 2026-07-17)
 
