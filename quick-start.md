@@ -60,14 +60,6 @@ DAC/signal internals — see `docs/firmware-guide.md`.
   1`, then confirm `overruns`/`tick_timeouts`/`clock_jitter` are ~0 and
   `loop_time_max` is well under 125 µs before trusting data.
 
-## Current physical state (2026-07-17)
-
-- Exciter and laser power supplies are **OFF**: actuation moves the DAC but
-  produces no current/motion; `laser` reads 0 and the laser probe logs "no
-  reply at any supported baud rate" (expected).
-- Before energising the exciter: David to confirm on a scope that A − C is
-  bipolar and non-inverting. First energised test: 0.1 V pp sine near 5–10 Hz.
-
 ## Sanity numbers
 
 - Idle 8 kHz: `loop_time_max` ~33–35 µs, wake phase ~36 µs, fault counters 0,

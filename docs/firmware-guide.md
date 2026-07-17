@@ -129,13 +129,14 @@ Timing diagnostics (`loop_time_*`, `wake_phase_*`, `t_measure_max`,
 parameters. See the **Health Monitoring** section of `AGENTS.md` for the
 routine-check procedure and `diag_reset` usage.
 
-## Known gaps / outstanding
+## Known gaps
 
 - **Feedback-control safety is not yet in the firmware:** no amplitude clamp, no
   output arming/lease or communication-loss quieting, no ADC-fault quieting.
   These matter for closed-loop CBC (which can go unstable), not for open-loop
   forcing, and some touch shared `rt_loop` code — agree scope before
   implementing.
-- **Before energising the exciter:** confirm on a scope that A − C is bipolar
-  and non-inverting against the current-controller input; software cannot read
-  the DAC pin voltages.
+
+Time-sensitive commissioning items (e.g. the outstanding scope check that A − C
+is bipolar and non-inverting before the exciter is energised) live in
+`todo.md`, not here.
