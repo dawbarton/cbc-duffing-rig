@@ -150,3 +150,14 @@ hard-constraints (prerequisite for energised closed-loop CBC/PLL/etc).
 - **Open decisions for David (D1-D4):** arm policy (lease vs connection-open); OUT_CEILING_V
   value (from exciter safe input range); displacement bound (pending laser cal); telemetry
   placement (BASE_PARAMS vs cbc extras). Recommendations given in doc.
+
+## 2026-07-18T10:16+00:00 Safety-stage decision D1 resolved
+
+- David chose arm policy = **explicit `arm` flag, no lease/heartbeat** (rationale: operator
+  present with emergency power-off, so hung-but-connected host need not auto-quiet).
+- Design doc updated: `SAFETY_ARMED` atomic replaces the lease deadline; writable base param
+  `arm` (1=arm+clear-trip-if-clear, 0=disarm), applied directly on core 0; TCP disconnect
+  still auto-disarms; disarmed after flash. Heartbeat/lease noted as the single future
+  extension point if unattended running is ever wanted.
+- Remaining open decisions: D2 OUT_CEILING_V (from exciter safe input range), D3 displacement
+  bound (pending laser cal), D4 telemetry placement (recommend BASE_PARAMS).

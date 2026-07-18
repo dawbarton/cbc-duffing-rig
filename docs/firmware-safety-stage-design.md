@@ -90,8 +90,8 @@ fn safety_gate<R: Rig>(rig, inputs, out_cmd) -> f32:
     # 1. Latching fault trip (experiment decides the condition)
     if rig.output_fault(inputs):
         SAFETY_TRIPPED.store(true)              # latches until explicit re-arm
-    # 2. Arm / lease (host heartbeat) and comms-loss
-    armed = now_us().wrapping_sub(LEASE_DEADLINE_US) as i32 < 0   # wrap-safe "not expired"
+    # 2. Armed flag (host-controlled; cleared on disconnect)
+    armed = SAFETY_ARMED.load() != 0
     # 3. Decide
     if SAFETY_TRIPPED or not armed:
         SAFETY_QUIET_TICKS += 1
@@ -106,14 +106,16 @@ All state is in shared atomics alongside the existing diagnostics:
 
 | Atomic | Set by | Meaning |
 |---|---|---|
-| `LEASE_DEADLINE_US: AtomicU32` | core 0 (param write, TCP close) | absolute TIMER0 µs; output armed iff not yet reached |
+| `SAFETY_ARMED: AtomicU32` | core 0 (`arm` param write, TCP close) | 0/1; output drives only when 1. Initialises to 0 (disarmed after flash) |
 | `SAFETY_TRIPPED: AtomicU32` | core 1 (gate), cleared by core 0 arm | latched fault trip |
 | `SAFETY_CLAMP_TICKS: AtomicU32` | core 1 | count of ticks the ceiling was active (diagnostic) |
 | `SAFETY_QUIET_TICKS: AtomicU32` | core 1 | count of ticks output was forced to safe (diagnostic) |
 
-Wrap-safety: `LEASE_DEADLINE_US` is compared with `now_us()` (TIMER0 low word, ~71.6 min
-wrap) using `wrapping_sub` cast to `i32`, the same idiom already used for tick spacing. Lease
-durations are far below the wrap period, so the sign test is unambiguous.
+Per **decision D1** (resolved): the arm state is a plain host-controlled flag — no lease,
+heartbeat, or timeout. Rationale: a human operator is present at the rig with an emergency
+power-off, so automatic quieting on a *hung-but-connected* host is not required. Comms-loss
+is still handled at the cheap, unambiguous boundary — TCP disconnect (§2.4) — and the output
+is disarmed by default after every flash/reset (`SAFETY_ARMED` starts 0).
 
 ### 2.3 Experiment-specific policy (`Rig` trait hooks, defaulted)
 
@@ -151,23 +153,22 @@ fn output_fault(&mut self, _inputs: &[f32]) -> bool { false }
     tick-since-change counter in its own state.
 
 The displacement trip depends on the laser sign/calibration being scope-verified first (the
-outstanding commissioning item in `todo.md`); the amplitude ceiling and the arm/lease/
+outstanding commissioning item in `todo.md`); the amplitude ceiling and the arm /
 comms-loss path do **not** depend on the laser and can land first (see §5 staging).
 
 ### 2.4 Host interface (no protocol change)
 
-- **Arm / renew:** one new writable base param `arm_lease_ms` (u32). Writing `n > 0` arms and
-  sets `LEASE_DEADLINE_US = now_us() + n·1000`, and clears `SAFETY_TRIPPED` (the fault
-  re-latches on the next tick if the condition persists, so this cannot mask a live fault).
-  Writing `0` disarms immediately (`LEASE_DEADLINE_US = now_us()`). Applied **directly on
-  core 0** in the param handler — the same pattern as `diag_reset` — so the disarm path has
-  no command-queue latency. To hold the output live the host renews the lease periodically
-  (a heartbeat); a stalled or crashed host lets the lease expire and the output quiets. This
-  single mechanism covers "arming", "host crash", and "comms-loss".
+- **Arm / disarm:** one new writable base param `arm` (u32). Writing `1` arms
+  (`SAFETY_ARMED = 1`) and clears `SAFETY_TRIPPED` (the fault re-latches on the next tick if
+  the condition persists, so re-arming cannot mask a live fault). Writing `0` disarms
+  immediately (`SAFETY_ARMED = 0`). Applied **directly on core 0** in the param handler — the
+  same pattern as `diag_reset` — so the disarm path has no command-queue latency. There is no
+  heartbeat obligation on the host; the output stays armed until explicitly disarmed or the
+  connection drops.
 - **Auto-disarm on disconnect:** in `comms::tcp::control_run`, the existing
   post-`serve` cleanup (which already sets `STREAM.enabled = false`) also sets
-  `LEASE_DEADLINE_US = now_us()`. A dropped TCP control connection quiets the actuator
-  immediately, independent of the lease timeout.
+  `SAFETY_ARMED = 0`. A dropped TCP control connection quiets the actuator immediately — the
+  comms-loss guard.
 - **Telemetry (read-only base params):** `safety_armed` (u32 0/1, derived), `safety_tripped`
   (u32 0/1), `safety_clamp_ticks`, `safety_quiet_ticks`. Surfaced through the same
   `BASE_PARAMS` + `get()` path as `overruns` et al., and added to the 1 Hz defmt status line.
@@ -175,13 +176,16 @@ comms-loss path do **not** depend on the laser and can land first (see §5 stagi
   harmless. (Alternative: expose them as `cbc-rig` extras to avoid inert params on other
   experiments — a minor placement choice, see D4.)
 
-### 2.5 Why lease-based rather than a separate watchdog
+### 2.5 Arm flag and its limits
 
-Reusing an absolute-deadline atomic unifies four requirements — explicit arming, host-crash
-quieting, comms-loss quieting, and "output off by default after flash" (deadline initialises
-to 0 = already expired = disarmed) — into one comparison per tick with no new task. It
-composes with the existing `time_watchdog` (which recovers lost embassy-time alarms on core
-0) rather than duplicating it.
+A plain armed flag gives three of the four safety guarantees with a single atomic and one
+comparison per tick: **off by default after flash** (`SAFETY_ARMED` starts 0), **explicit
+operator arming**, and **comms-loss quieting** on TCP disconnect. The guarantee it
+deliberately does *not* provide (per D1) is automatic quieting of a **hung-but-connected**
+host — that residual risk is covered operationally by the human operator and emergency
+power-off. If unattended running is ever wanted, this is the single point to add a
+heartbeat/lease later (swap the flag for an absolute-deadline atomic) without touching the
+gate, the hooks, or the other experiments.
 
 ---
 
@@ -208,7 +212,7 @@ composes with the existing `time_watchdog` (which recovers lost embassy-time ala
   `output_fault` to the `Rig` trait, all defaulted.
 - `firmware/common/src/rt_loop.rs` — the `safety_gate` function, the four atomics, the
   `reset_diagnostics` additions (clamp/quiet counters), the applied-output substitution.
-- `firmware/common/src/params.rs` + `params/schema.rs` — `arm_lease_ms` writable param
+- `firmware/common/src/params.rs` + `params/schema.rs` — `arm` writable param
   (direct core-0 apply) and the read-only safety telemetry.
 - `firmware/common/src/comms/tcp.rs` — one line in the disconnect cleanup.
 
@@ -225,14 +229,14 @@ by the root `cargo test`.
 **New tests (host-testable, no hardware):**
 
 - Gate: disarmed → returns `safe_output`; armed + in-range → returns `clamp_output(out)`;
-  over-ceiling → clamped; fault → latched quiet until re-arm; lease expiry across the
-  `now_us` comparison including a wrap boundary.
+  over-ceiling → clamped; fault → latched quiet until re-arm; re-arm clears the trip only
+  when the fault condition is already clear.
 - `clamp_output` symmetry and ceiling for `cbc-rig`.
 - Staleness counter logic in `output_fault`.
 
 **On-rig verification (staged, low drive first):** with `OUT_CEILING_V` set low, confirm (a)
-output is quiet until `arm_lease_ms` is written; (b) stopping the host heartbeat quiets the
-output within the lease timeout; (c) dropping the TCP connection quiets immediately; (d) a
+output is quiet until `arm=1` is written; (b) writing `arm=0` quiets immediately; (c)
+dropping the TCP connection quiets immediately; (d) a
 forced over-ceiling command is clamped (observe on `out` telemetry and a scope); (e)
 `safety_*` telemetry and the status line reflect each state. Watch health counters throughout.
 
@@ -243,9 +247,9 @@ forced over-ceiling command is clamped (observe on `out` telemetry and a scope);
 1. **Trait hooks + gate scaffolding + `SAFETY_GATED=false` everywhere.** Pure shared
    refactor; no behavioural change; other experiments verified unchanged. Host tests for the
    gate with defaults.
-2. **Amplitude ceiling + arm/lease + comms-loss, `cbc-rig` gated.** Does *not* depend on the
-   laser. Delivers the core interlock: output off until armed, quiets on host loss/disconnect,
-   hard-clamps drive. On-rig verification (a)–(e) above at low ceiling.
+2. **Amplitude ceiling + arm + comms-loss (disconnect), `cbc-rig` gated.** Does *not* depend
+   on the laser. Delivers the core interlock: output off until armed, quiets on disarm or
+   disconnect, hard-clamps drive. On-rig verification (a)–(e) above at low ceiling.
 3. **Displacement + stale-sensor trip.** Depends on the laser sign/calibration commissioning
    item; add once that is verified. Extends `output_fault`.
 4. **(Later / optional)** current-based trip via `adc0`; slew limiting; raw pre-gate `out`
@@ -257,18 +261,16 @@ Only after step 2 is on the rig should any *energised closed-loop* CBC/PLL run b
 
 ## 6. Open decisions (need David)
 
-- **D1 — Arm policy.** Explicit-arm-required + heartbeat lease (recommended, above), vs a
-  simpler "armed whenever a control connection is open" (no periodic renew). The lease adds a
-  host-side heartbeat obligation but is the only variant that quiets on a *hung* (not closed)
-  host. Recommendation: lease, with a generous default timeout (e.g. 500 ms) that the host
-  renews at ~10 Hz.
+- **D1 — Arm policy. RESOLVED (David, 2026-07-18):** explicit `arm` flag, no lease/heartbeat;
+  disarm on `arm=0` or TCP disconnect; disarmed after flash. Operator present with emergency
+  power-off covers the hung-but-connected-host case. See §2.5.
 - **D2 — `OUT_CEILING_V`.** The hard logical differential ceiling. Given the ≤ 2 V pp soft
   limit and MID_RAIL bias, a logical ceiling around ±1.0–1.5 V is a plausible hard cap, but
   this should be set from the exciter current-controller's safe input range, not guessed.
 - **D3 — Displacement bound.** The safe tip-displacement trip level (in laser mm about a
   reference), pending the laser calibration/sign check. Also whether to trip on absolute
   range-of-travel, on excursion from the operating point, or both.
-- **D4 — Telemetry placement.** Safety telemetry + `arm_lease_ms` as shared `BASE_PARAMS`
+- **D4 — Telemetry placement.** Safety telemetry + `arm` as shared `BASE_PARAMS`
   (inert on other experiments) vs `cbc-rig` extras (zero footprint elsewhere, slightly more
   wiring). Recommendation: `BASE_PARAMS`, since the mechanism is shared and the inert cost is
   four read-only params.
