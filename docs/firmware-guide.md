@@ -93,9 +93,12 @@ The exciter's current controller takes a **differential** input: DAC channel A
   D at 0 V — in a single spaced pass via `Ad5064::write_volts_with_delay` (C
   before A so the driven channel settles to match the reference last).
   `actuate()` writes `MID_RAIL + out` to channel A every tick.
-- **Clamping / no amplitude limit:** the AD5064 driver clamps the final channel
-  voltage to 0–4.096 V, so a logical `out` beyond ±2.048 V saturates silently.
-  There is **no firmware amplitude clamp**.
+- **Clamping:** the safety stage (below) hard-clamps the logical `out` every
+  tick so the driven channel voltage `MID_RAIL + out` stays within
+  `[DAC_OUT_FLOOR_V, DAC_OUT_CEILING_V]` (0.096–4.0 V by default → differential
+  ±1.952 V). The AD5064 driver's own 0–4.096 V clamp remains as a final
+  backstop. The streamed `out` is the **applied** value, i.e. after clamping
+  and any safety quieting.
 - **Output routing is locked:** `rig_out_channel` accepts only `0` (channel A)
   and rejects `1` (broken B) and `2` (the C reference) with "bad value", so a
   host command cannot redirect or clobber the differential output.
@@ -119,22 +122,62 @@ Not persisted at runtime — edit and reflash to change:
 - `ActiveController = PassThrough`. To run closed-loop control, swap
   `ActiveController` and `make_controller()` together (e.g. a PID controller);
   the host discovers the resulting parameters by name.
+- **Safety limits:** `DAC_OUT_CEILING_V = 4.0`, `DAC_OUT_FLOOR_V = 0.096`
+  (DAC-output-voltage window for the exciter drive), `DISPLACEMENT_MIN_MM = 10`
+  / `DISPLACEMENT_MAX_MM = 40` (laser trip window about the ~25 mm resting
+  point), `LASER_STALE_AFTER_S = 0.02` (blind-feedback guard). See the safety
+  stage below.
+
+## Output safety stage
+
+`cbc-rig` drives the exciter through a feedback path that can go unstable, so it
+opts into the shared per-tick **safety gate** (`Rig::SAFETY_GATED = true`). The
+gate runs on core 1 after the controller/forcing/table sum and before the DAC
+write; it is a hard, firmware-level constraint that no host script or controller
+bug can bypass. Design rationale and the full mechanism are in
+`docs/old/2026-07-18-firmware-safety-stage-design.md`.
+
+- **Amplitude ceiling** — `clamp_output` clamps the logical command to the DAC
+  window above; the streamed `out` is the applied (post-clamp) value.
+- **Arming** — the output is **disarmed after every flash/reset** and is held at
+  zero drive until the host writes the `arm` parameter (`arm = 1`). Writing
+  `arm = 0`, or dropping the TCP control connection, disarms immediately
+  (comms-loss quieting). There is no lease/heartbeat: an operator is present at
+  the rig with emergency power-off (decision D1). Arming clears a latched trip
+  only if the fault condition is already clear.
+- **Fault trip** — `output_fault` latches a trip (held quiet until re-arm) if
+  the laser leaves the `[DISPLACEMENT_MIN_MM, DISPLACEMENT_MAX_MM]` window, reads
+  non-finite, or its frame counter stalls (`LASER_STALE_AFTER_S`, a
+  blind-feedback guard). With the laser unpowered the gate therefore trips and
+  quiets — the safe default.
+- **Host visibility** — the `safety` parameter is a bitfield: bit0 armed, bit1
+  latched trip, bit2 clamped-since-reset, bit3 quieted-since-reset. Exact
+  clamp/quiet tick counts appear in the 1 Hz status log. `arm` reads back the
+  armed state.
+
+The gate is generic (`firmware/common`), opt-in per experiment; `whirl-rig` and
+`pico2w-rig` leave `SAFETY_GATED = false` and are unaffected (the gate compiles
+out). A future bipolar output stage will re-home `MID_RAIL` to 0 and turn the
+DAC window into independent ± limits.
 
 ## Diagnostics
 
 Timing diagnostics (`loop_time_*`, `wake_phase_*`, `t_measure_max`,
-`t_actuate_max`, `t_rest_max`) and fault counters (`overruns`, `tick_timeouts`,
-`clock_jitter`, `cmd_backlog_max`, `records_dropped`, `laser_*`) are read-only
-parameters. See the **Health Monitoring** section of `AGENTS.md` for the
-routine-check procedure and `diag_reset` usage.
+`t_actuate_max`, `t_rest_max`), fault counters (`overruns`, `tick_timeouts`,
+`clock_jitter`, `cmd_backlog_max`, `records_dropped`, `laser_*`) and the
+`safety` bitfield are read-only parameters. See the **Health Monitoring**
+section of `AGENTS.md` for the routine-check procedure and `diag_reset` usage.
 
 ## Known gaps
 
-- **Feedback-control safety is not yet in the firmware:** no amplitude clamp, no
-  output arming/lease or communication-loss quieting, no ADC-fault quieting.
-  These matter for closed-loop CBC (which can go unstable), not for open-loop
-  forcing, and some touch shared `rt_loop` code — agree scope before
-  implementing.
+- **Closed-loop stabilising controller not yet selected:** `ActiveController`
+  is still `PassThrough`. The safety gate is in place and controller-agnostic,
+  but energised closed-loop CBC/PLL also needs a feedback controller (the
+  documented `config.rs` swap) — a separate step.
+- **Amplitude-clamp behaviour is unit-tested but not yet exercised live:** with
+  the laser unpowered the gate trips and quiets, so the clamp path (armed +
+  in-range + over-ceiling command) has only been verified by host tests; it will
+  be exercised on the rig once the laser is powered and calibrated.
 
 Time-sensitive commissioning items (e.g. the outstanding scope check that A − C
 is bipolar and non-inverting before the exciter is energised) live in

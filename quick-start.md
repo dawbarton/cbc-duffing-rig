@@ -29,8 +29,15 @@ DAC/signal internals — see `docs/firmware-guide.md`.
     `table_trigger` (see `helic-daq/docs/user_guide.md`).
 - The applied exciter command is `out = controller(target) + forcing + table`,
   in volts as the **signed differential drive** (0 V = zero drive, positive =
-  more drive). With the default `PassThrough` controller, `target` passes
-  straight through.
+  more drive), then passed through the firmware safety gate (clamp + arm/trip).
+  With the default `PassThrough` controller, `target` passes straight through.
+- **Arming:** the output is **disarmed after every flash/reset** and stays at
+  zero drive until you `set arm 1`; `set arm 0` or dropping the control
+  connection disarms. Because each one-shot CLI command opens and closes its own
+  connection (which disarms on close), driving the exciter needs a **persistent
+  host session** (Julia/Python `Device` context) that arms once and holds the
+  connection. Poll `safety` (bitfield: bit0 armed, bit1 tripped, bit2 clamped,
+  bit3 quieted) to see gate state.
 - `rig_out_channel` is locked to channel A (0) — leave it. `rig_laser_range`
   (mm) must match the fitted sensor (50 mm).
 
@@ -40,19 +47,23 @@ DAC/signal internals — see `docs/firmware-guide.md`.
   unused.
 - `laser` (mm) — tip displacement.
 - `target`, `forcing`, `table`, `out` (V) — the drive decomposition; `out` is
-  the applied signed differential command. (`out` is a source, not a parameter —
-  capture it, don't `get` it.)
+  the **applied** signed differential command, i.e. after the safety gate (clamp
+  / quieting), so it reflects what was actually driven. (`out` is a source, not a
+  parameter — capture it, don't `get` it.)
 - `cmd_epoch` (count) — increments when a parameter write takes effect; capture
   it alongside data to align commands to samples.
 
 ## Safe operating points
 
 - Exciter input: start at 0.1 V pp (amplitude 0.05 V); **do not exceed 2 V pp**.
-  A logical `out` beyond ±2.048 V saturates at the DAC and is **not** clamped by
-  firmware — enforce amplitude limits host-side.
+  The firmware now hard-clamps the driven channel to a 0.096–4.0 V window
+  (logical `out` ≈ ±1.952 V) and trips to quiet if the laser leaves the
+  10–40 mm window or its feed stalls — but these are backstops, so still keep
+  amplitude discipline host-side.
 - Primary resonance ~5–10 Hz (shifts with the air gap).
-- On any instability or large displacement, `stop` immediately (zeros forcing
-  and target).
+- On any instability or large displacement, `set arm 0` (or drop the
+  connection) to quiet the exciter immediately, and `stop` to zero forcing and
+  target.
 
 ## Health check (each session, and around captures)
 
@@ -63,6 +74,10 @@ DAC/signal internals — see `docs/firmware-guide.md`.
 ## Sanity numbers
 
 - Idle 8 kHz: `loop_time_max` ~33–35 µs, wake phase ~36 µs, fault counters 0,
-  `clock_jitter` ~0–1 µs. `records_dropped` sits at a fixed ~498 startup count
-  (records produced before a UDP consumer connects) — not an anomaly; watch for
-  growth *during* a capture instead.
+  `clock_jitter` ~0–1 µs (the safety gate adds no measurable tick cost).
+  `records_dropped` sits at a fixed ~498 startup count (records produced before a
+  UDP consumer connects) — not an anomaly; watch for growth *during* a capture
+  instead.
+- With the laser unpowered, `safety` reads `0b1010` (tripped + quieting) — the
+  correct blind-feedback default; once armed with a live laser in-range it reads
+  `0b0001` (armed, not tripped).

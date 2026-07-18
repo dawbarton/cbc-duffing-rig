@@ -161,3 +161,25 @@ hard-constraints (prerequisite for energised closed-loop CBC/PLL/etc).
   extension point if unattended running is ever wanted.
 - Remaining open decisions: D2 OUT_CEILING_V (from exciter safe input range), D3 displacement
   bound (pending laser cal), D4 telemetry placement (recommend BASE_PARAMS).
+
+## 2026-07-18T10:16+00:00 Safety stage implemented, flashed, verified
+
+- Implemented the full firmware safety stage per the design doc; flashed to the live rig
+  (helic-daq commit `c8c3abe`) with exciter+laser powered off (safe).
+- Decisions applied: D2 DAC output window 0.096–4.0 V (4 V ceiling per David; floor
+  symmetric about MID_RAIL for the interim unipolar board; future bipolar board → independent
+  ± limits). D3 displacement window 10–40 mm (rest ≈25 mm). D4 telemetry in BASE_PARAMS.
+- Two host params (not four, to fit the 1023/1024-byte discovery budget): writable `arm`,
+  read-only `safety` bitfield (armed/tripped/clamped/quieted). `MAX_RIG_PARAMS` trimmed 8→6.
+- Verified: 51 host tests incl. new `helic-core::safety` (clamp + StaleCounter), root+firmware
+  clippy, both board features build for all 3 experiments, RT-layout (gate/hooks in SRAM), fmt.
+  On-rig: disarmed-after-flash, blind-laser trip+quiet (`safety=0b1010`), arm/disarm,
+  disconnect-disarm, and **loop_time 33–34 µs preserved** (gate adds no measurable cost).
+- Not yet exercised live: the amplitude clamp path (needs a powered, in-range laser); covered
+  by unit test. Tracked in todo.md.
+- Design doc moved to `docs/old/2026-07-18-firmware-safety-stage-design.md`.
+- Observation for David (pre-existing, not fixed): host-python CLI `_parse_values` always
+  produces floats, so `helic-daq set diag_reset 1` / `set arm 1` raise a struct error for
+  U32 params. The library `Device.set(name, 1)` (int) works, which is the intended arming
+  path anyway (CLI one-shot disconnects → disarms). Worth a small CLI coercion fix separately.
+- Remaining functional step for energised closed-loop: swap `ActiveController` PassThrough→PID.

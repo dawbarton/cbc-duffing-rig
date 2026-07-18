@@ -32,6 +32,8 @@ DAC channels used are:
 
 Since the DAC is unipolar (output between 0 and 4.096V), DAC output channel C should be set to approximately 50% range (i.e., 2V) and only DAC output channel A varied.
 
+Firmware-enforced hard safety limits (the `cbc-rig` safety gate; see `docs/firmware-guide.md` "Output safety stage"): the driven channel voltage is clamped to 0.096–4.0V (logical `out` ≈ ±1.952V); the actuator trips to a quiet state if the laser tip displacement leaves the 10–40mm window (resting point ≈ 25mm) or the laser feed stalls; the output is disarmed after every flash/reset and on control-connection loss, and must be armed (`set arm 1`, over a persistent host connection) before it will drive. These backstops do not remove the soft discipline above (start 0.1V pp, do not exceed 2V pp). Values are compile-time constants in `cbc-rig/src/config.rs`.
+
 This file (`AGENTS.md`) is the single source of truth for rig constants and constraints (safe operating limits, voltage ceilings, starting amplitudes, etc); do not duplicate this information as it will go stale. Instead, reference this file.
 
 ## Health Monitoring
@@ -42,6 +44,7 @@ The firmware exposes read-only real-time diagnostics that must be checked routin
 - `loop_time_last` / `loop_time_max`, `wake_phase_min` / `wake_phase_max`, `t_measure_max` / `t_actuate_max` / `t_rest_max` — per-tick timing budget (125 us at 8 kHz); watch for maxima approaching the tick period.
 - `cmd_backlog_max`, `records_dropped` — command/streaming backpressure. `records_dropped` accrues a fixed startup count before a UDP consumer first connects; only further growth during a capture is an anomaly.
 - `laser_uart_errors`, `laser_parse_errors`, `laser_invalid_frames`, `laser_unexpected_values`, `laser_sync_errors` — laser link health.
+- `safety` — output safety-gate state bitfield: bit0 armed, bit1 latched trip, bit2 clamped-since-reset, bit3 quieted-since-reset (`arm` reads back the armed bit). Confirm the expected state before/while driving: e.g. `0b0001` (armed, untripped) when driving with a live in-range laser; a set trip bit means the gate has latched a fault and is holding the actuator quiet until re-armed.
 
 Use `helic-daq set diag_reset 1` to clear the min/max and counter trackers immediately before a measurement so readings pertain to that run. Investigate any nonzero fault counter or timing maximum near the tick period before proceeding.
 

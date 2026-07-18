@@ -1,7 +1,12 @@
 # Firmware safety stage — scoped design proposal
 
-**Status:** proposal for review (not yet implemented). Authored by the agent, 2026-07-18.
-Reflects helic-daq firmware as read at project commit state on that date.
+**Status:** IMPLEMENTED 2026-07-18 (helic-daq firmware commit `c8c3abe`), superseding this
+proposal. This document is retained for the design rationale and decision record; the
+operational reference now lives in `docs/firmware-guide.md` ("Output safety stage"). Some
+details were refined during implementation — notably the host interface exposes a single
+`safety` bitfield word plus the `arm` writable (not four separate telemetry params), to stay
+within the single-frame discovery budget; `MAX_RIG_PARAMS` was trimmed 8→6 for the same
+reason. Authored by the agent.
 
 Prerequisite for energised **closed-loop** operation (CBC, PLL, adaptive-filtering CBC,
 derivative-free arclength CBC, GP continuation, and the multisine injection used for
