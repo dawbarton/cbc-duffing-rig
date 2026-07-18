@@ -87,3 +87,66 @@
 - Docs are written as agent implementation guidance (technical, high-signal), not general-reader explainers, per David's steer.
 - Caveat recorded in the docs: some bibliographic details (years/venues) are from memory and paraphrased paper fetches; the arXiv IDs above were verified via search, other citations should be confirmed before formal use. The lightweight fetch summaries of PLL/adaptive-filter equations were cartoons and were rewritten against established formulations.
 - Recurring theme across all docs: every method closes the loop through the exciter, so the firmware safety envelope (amplitude ceiling, output arming/lease, comms-loss + ADC-fault quieting, applied-output telemetry, per-evaluation trip to safe state) is a prerequisite for any energised closed-loop run — ties directly to the todo.md Future items.
+
+## 2026-07-18T10:16+00:00 Firmware-change review against docs/methods/
+
+Reviewed all six method docs against the `cbc-rig` firmware (rt_loop.rs, params.rs,
+generator.rs, table.rs, controller.rs, pid.rs) to decide what firmware work is needed.
+
+- **Finding:** firmware is already a generic phase-coherent excitation + streaming engine;
+  algorithmic logic belongs host-side. Runtime-configurable over TCP with no reflash:
+  `freq` (→SetIncrement, shared by target+forcing), `target` Fourier coeffs (H≤16), `forcing`
+  Fourier coeffs (feed-forward added to output), arbitrary `table` upload (set_block/commit,
+  ≤4096 samples, own phase accumulator/gain/mode/mult/phase/trigger), ctrl/rig params, diag_reset.
+  Streams adc0-7, laser, ctrl telemetry, target, forcing, table, out, cmd_epoch per tick.
+  Signal chain: `out = controller.tick(inputs,target,dt) + forcing + table`.
+- **Essential change 1 (functional):** select a stabilising controller — the documented
+  compile-time swap `ActiveController = PassThrough → PidController` in config.rs. PID acts on
+  `error = target - inputs[feedback]` = CBC law `u=K(r-x)`; filtered derivative (tau_d) present.
+  Run as PD (ki=0) so integral doesn't fight A0/mean; non-invasiveness holds (e→0 ⇒ control→0
+  at controlled harmonics regardless of gain). Existing PidController is adequate.
+- **Essential change 2 (safe closed-loop):** firmware-level safety hard-constraints, listed as
+  prerequisites in every closed-loop doc + firmware-guide "Known gaps": (1) output amplitude
+  ceiling on final `out` (none today — DAC only silently saturates at ±2.048V); (2) displacement
+  trip on `laser`; (3) stale-laser/ADC-fault quieting; (4) comms-loss/heartbeat quieting
+  (esp. for continuously-adapting loops); (5) output arming/lease. Items 1,3,4 touch shared
+  rt_loop/common code → agree scope before implementing (recommend a thin parameterised per-tick
+  safety stage in the shared loop).
+- **No firmware change needed** for PLL, LTP-ARX/Floquet stability (multisine via table player),
+  adaptive-filtering CBC, derivative-free arclength CBC, GP continuation — all host-side (Julia),
+  reuse existing excitation/streaming. HARMONICS=16 already exceeds the H≈3 the docs ask for.
+- **Keep host-side:** harmonic projection, LMS/RLS, PLL loop, Newton/Broyden/DF corrector, GP.
+  Future (latency-driven): in-firmware adaptive canceller would need drive phase θ passed into
+  Controller::tick — a shared-trait change to scope separately.
+- Recommended order: (1) PID swap + open-loop→low-gain closed-loop bring-up on stable branch;
+  (2) design/review shared safety stage before energised closed-loop; (3) rest host-side.
+
+## 2026-07-18T10:16+00:00 Shared safety-stage design proposal
+
+Wrote `docs/firmware-safety-stage-design.md` — scoped design for the firmware safety
+hard-constraints (prerequisite for energised closed-loop CBC/PLL/etc).
+
+- **Architecture:** a generic "safety gate" in shared `rt_loop::run_rt_tick`, run after the
+  controller+forcing+table sum and before `rig.actuate`. Opt-in via new trait const
+  `Rig::SAFETY_GATED` (default false → compiled out → whirl/pico2w byte-identical). Streamed
+  `out` becomes the APPLIED (post-gate) value = applied-output telemetry the docs want.
+- **Mechanism (shared, generic):** arm/lease via absolute-deadline atomic `LEASE_DEADLINE_US`
+  (wrap-safe vs now_us()); unifies arming, host-crash, comms-loss, off-after-flash into one
+  per-tick compare. Latching `SAFETY_TRIPPED`. Clamp/quiet tick counters as diagnostics.
+- **Policy (cbc-rig, via 3 defaulted trait hooks):** `clamp_output` = hard ±OUT_CEILING_V;
+  `safe_output` = 0.0 (→MID_RAIL zero drive); `output_fault` = laser displacement bound OR
+  laser-frame staleness (blind-feedback guard).
+- **Host interface, NO protocol change:** new writable base param `arm_lease_ms` applied
+  directly on core 0 (like diag_reset) — >0 arms+renews+clears trip, 0 disarms; heartbeat
+  renewal holds output live. TCP disconnect cleanup in control_run also expires the lease
+  (immediate comms-loss quiet). Read-only safety telemetry (armed/tripped/clamp/quiet) +
+  status line.
+- **Staging:** (1) trait hooks+gate scaffolding, SAFETY_GATED=false everywhere, no behaviour
+  change; (2) ceiling+arm/lease+comms-loss (laser-independent) — the core interlock, verify
+  on rig at low ceiling BEFORE any energised closed-loop; (3) displacement/stale trip (needs
+  laser sign/calibration commissioning item first); (4) optional adc0 current trip / slew.
+- **Out of scope:** in-fw projection/adaptive/PLL, hardware interlock (recommended separate
+  track), rate limiting.
+- **Open decisions for David (D1-D4):** arm policy (lease vs connection-open); OUT_CEILING_V
+  value (from exciter safe input range); displacement bound (pending laser cal); telemetry
+  placement (BASE_PARAMS vs cbc extras). Recommendations given in doc.
