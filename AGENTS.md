@@ -49,6 +49,14 @@ Implementation-level notes on the experimental-continuation techniques under inv
 live in `docs/methods/` (written for agents implementing on this rig; each ends with a
 rig-specific `## Duffing rig` section):
 
+> This file (`AGENTS.md`) is the single source of truth for rig constants and constraints
+> — safe operating limits (voltage ceilings, starting amplitudes), the primary-resonance
+> range, sample rate, channel/DAC mapping, etc. The `docs/methods/` files must *reference*
+> these rather than restating them, so that a change here does not leave stale numbers
+> scattered across the method docs. If you find a duplicated rig constant in a method doc,
+> replace it with a pointer to AGENTS.md.
+
+
 - Control-based continuation (CBC), the core method — stabilising controller,
   non-invasiveness, Fourier-coefficient reference, Newton + pseudo-arclength:
   `docs/methods/control-based-continuation.md`.

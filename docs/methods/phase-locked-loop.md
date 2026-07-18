@@ -113,21 +113,21 @@ For an NLFRF, replace "increase energy" with "hold amplitude, step `φ_set` acro
 
 ## Duffing rig
 
-- Well-suited: the rig has one dominant, reasonably isolated primary resonance at 5–10 Hz,
-  which is the regime where single-mode phase-resonance testing is most valid.
+- Well-suited: the rig has one dominant, reasonably isolated primary resonance (range in
+  AGENTS.md), which is the regime where single-mode phase-resonance testing is most valid.
 - Phase detector: synchronous demodulation of the laser signal against the internal drive
-  phase is cleanest given the deterministic 8 kHz loop and the firmware's phase-coherent
+  phase is cleanest given the deterministic real-time loop and the firmware's phase-coherent
   excitation model. `adc0` (exciter current) or the coil pickup can supply the force-phase
   reference.
 - The VCO/drive is generated host-side and pushed through the firmware Fourier/table
-  excitation; keep the phase PI loop slow relative to 5–10 Hz and well within the actuator
-  bandwidth.
+  excitation; keep the phase PI loop slow relative to the primary resonance and well within
+  the actuator bandwidth.
 - Expect strong odd harmonics from the magnet nonlinearity → measure the full spectrum at
   each locked point and be aware the −90° *fundamental* criterion is approximate; consider
   an NCPLL-style phase definition if backbones from PLL and CBC disagree.
 - Same closed-loop safety envelope as CBC: the loop drives the exciter, so amplitude
   ceiling, arming/lease, and fault quieting must be in place; the sweep loop's safety check
-  must trip to the safe state on any displacement/current excursion. Begin near 0.1 Vpp,
-  keep the 2 Vpp soft limit.
+  must trip to the safe state on any displacement/current excursion, within the safe
+  operating limits in AGENTS.md.
 - Good first comparison experiment: PLL backbone vs CBC-traced fold locus on the same
   operating point / air gap, as the noise-robustness head-to-head the project calls for.

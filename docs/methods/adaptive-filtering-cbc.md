@@ -103,7 +103,7 @@ validate: repeat at half ramp rate; branches must coincide
 
 ## Duffing rig
 
-- Fits the deterministic 8 kHz real-time loop well: the harmonic regressor `φ(t)` is cheap
+- Fits the deterministic real-time loop well: the harmonic regressor `φ(t)` is cheap
   to evaluate per tick, and an LMS/RLS update on `H≈3` harmonics is a small fixed cost. A
   first implementation can keep the adaptive law host-side over the streaming interface;
   moving it into `cbc-rig` firmware later would cut latency but is a shared-code change to

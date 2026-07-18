@@ -77,7 +77,8 @@ adapt Δs from iteration count; append point; update t̂
 
 - Strong candidate for early adoption on this rig precisely because it sidesteps
   finite-difference Jacobians, which would otherwise mean many extra settling periods per
-  continuation step at 5–10 Hz — slow and noise-sensitive on a mechanical rig.
+  continuation step at the rig's low primary resonance (AGENTS.md) — slow and
+  noise-sensitive on a mechanical rig.
 - The electronic-Duffing demonstration in the 2024 review is the closest published analogue
   to this system; use its reported behaviour as a sanity reference for what a healthy branch
   trace should look like.

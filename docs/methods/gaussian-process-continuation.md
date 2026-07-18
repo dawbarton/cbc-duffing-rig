@@ -91,7 +91,7 @@ at each continuation step:
 - Reuses the standard-CBC non-invasive residual and the firmware Fourier/table excitation
   unchanged; only the corrector's Jacobian source changes. Implement host-side in Julia.
 - Set the GP noise term from a measured rig repeatability at a fixed operating point (repeat
-  the same reference, observe laser-harmonic scatter) rather than guessing — the 8 kHz
+  the same reference, observe laser-harmonic scatter) rather than guessing — the high-rate
   streaming makes such repeatability captures cheap.
 - Especially useful near the primary-resonance folds where finite-difference Jacobians are
   worst-conditioned; the posterior variance gives an honest error bar on the fold location

@@ -101,16 +101,16 @@ for each converged CBC orbit on the branch:
 
 ## Duffing rig
 
-- Input `u` = logical differential drive to the exciter; output `x` = laser displacement.
+- Input `u` = logical drive to the exciter (`out`); output `x` = laser displacement.
   The injected multisine rides on top of the non-invasive command via the same firmware
   excitation path.
-- At 5–10 Hz with 8 kHz sampling, one period is ~800–1600 samples; an LTP-ARX with a modest
-  phase-harmonic expansion is well-resolved, but many periods are needed — expect
-  tens-of-seconds captures per stability point. Watch `records_dropped`/`overruns` during
-  these longer streams.
-- Perturbation amplitude must respect the same soft/again-hard limits as everything else;
-  keep the multisine small (well under the 0.1 Vpp working point) and confirm it does not
-  push the tip past safe displacement. Trip to safe state on any excursion.
+- At the rig's primary resonance and sample rate (AGENTS.md), one period spans on the order
+  of a thousand samples; an LTP-ARX with a modest phase-harmonic expansion is well-resolved,
+  but many periods are needed — expect tens-of-seconds captures per stability point. Watch
+  `records_dropped`/`overruns` during these longer streams.
+- Perturbation amplitude must respect the safe operating limits in AGENTS.md; keep the
+  multisine small relative to the working-point amplitude and confirm it does not push the
+  tip past safe displacement. Trip to safe state on any excursion.
 - Primary payoff for this rig: label the CBC-traced primary-resonance branch stable/unstable
   and pin the two saddle-node folds via `μ → +1`, cross-checked against the arclength
   turning points. Period-doubling/Neimark–Sacker are less expected near primary resonance

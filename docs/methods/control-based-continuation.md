@@ -162,11 +162,12 @@ repeat:
 
 ## Duffing rig
 
-- SISO fit: actuator = base electromagnetic exciter (DAC A vs C differential, logical
-  `out`); controlled output = laser tip displacement (`laser`); optional secondary =
+- SISO fit: actuator = base electromagnetic exciter (logical `out`; DAC mapping per
+  AGENTS.md); controlled output = laser tip displacement (`laser`); optional secondary =
   stator coil pickup / `adc0` exciter-current monitor. Start CBC with the laser as `x`.
-- Primary resonance 5–10 Hz (moves with air gap). At 8 kHz sampling there are ~800–1600
-  samples/period — ample for harmonic projection; average over ≥ 10–20 periods.
+- The primary resonance moves with the air gap (AGENTS.md gives its range and the sample
+  rate); at those values each period spans on the order of a thousand samples — ample for
+  harmonic projection, and worth averaging over ≥ 10–20 periods.
 - The magnet–stator attraction is the dominant (Duffing-type) nonlinearity → expect strong
   odd harmonics; start with `H = 3` (1st, 3rd, and keep 2nd to catch any asymmetry from
   air-gap bias), revisit from the measured control spectrum.
@@ -178,8 +179,8 @@ repeat:
   large drive.
 - Reference/feedback path lives partly on-host and partly in firmware. The firmware already
   supports a Fourier-series/table excitation model; feed the reference `r(t; u)` through it
-  and keep the Newton/arclength logic on the host (Julia) initially. Keep the 2 Vpp soft
-  limit; begin near 0.1 Vpp.
+  and keep the Newton/arclength logic on the host (Julia) initially. Respect the safe
+  operating limits in AGENTS.md.
 - First CBC target: trace the primary-resonance frequency response at a fixed modest
   forcing, capturing the unstable middle branch between the two folds — the minimal result
   that proves non-invasive stabilisation works on this rig.
