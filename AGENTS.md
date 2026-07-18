@@ -43,6 +43,26 @@ The firmware exposes read-only real-time diagnostics that must be checked routin
 
 Use `helic-daq set diag_reset 1` to clear the min/max and counter trackers immediately before a measurement so readings pertain to that run. Investigate any nonzero fault counter or timing maximum near the tick period before proceeding.
 
+## Methods
+
+Implementation-level notes on the experimental-continuation techniques under investigation
+live in `docs/methods/` (written for agents implementing on this rig; each ends with a
+rig-specific `## Duffing rig` section):
+
+- Control-based continuation (CBC), the core method — stabilising controller,
+  non-invasiveness, Fourier-coefficient reference, Newton + pseudo-arclength:
+  `docs/methods/control-based-continuation.md`.
+- Phase-locked loop (PLL) / phase-resonance testing — backbone curves and nonlinear normal
+  modes: `docs/methods/phase-locked-loop.md`.
+- Stability and bifurcation estimation — ARX/Floquet multipliers from closed-loop data,
+  fold/period-doubling classification: `docs/methods/stability-bifurcation-estimation.md`.
+- Adaptive-filtering (continuous-time) CBC — stepped vs swept, noise-robust variant:
+  `docs/methods/adaptive-filtering-cbc.md`.
+- Derivative-free arclength CBC — Jacobian-free predictor–corrector:
+  `docs/methods/derivative-free-arclength-cbc.md`.
+- Gaussian-process-regression continuation — surrogate Jacobian and uncertainty
+  quantification: `docs/methods/gaussian-process-continuation.md`.
+
 ## Behavioural Standards
 
 - Flag assumptions that may not hold, approximations that may be too coarse, and conclusions that outrun the evidence.
