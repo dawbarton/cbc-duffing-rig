@@ -95,8 +95,7 @@ The exciter's current controller takes a **differential** input: DAC channel A
   `actuate()` writes `MID_RAIL + out` to channel A every tick.
 - **Clamping / no amplitude limit:** the AD5064 driver clamps the final channel
   voltage to 0–4.096 V, so a logical `out` beyond ±2.048 V saturates silently.
-  There is **no firmware amplitude clamp**; the 0.1 V pp starting point and
-  ≤ 2 V pp ceiling are soft/host responsibilities for now.
+  There is **no firmware amplitude clamp**.
 - **Output routing is locked:** `rig_out_channel` accepts only `0` (channel A)
   and rejects `1` (broken B) and `2` (the C reference) with "bad value", so a
   host command cannot redirect or clobber the differential output.

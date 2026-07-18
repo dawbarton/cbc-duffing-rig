@@ -66,4 +66,3 @@ DAC/signal internals — see `docs/firmware-guide.md`.
   `clock_jitter` ~0–1 µs. `records_dropped` sits at a fixed ~498 startup count
   (records produced before a UDP consumer connects) — not an anomaly; watch for
   growth *during* a capture instead.
-- `adc0` (exciter current sense) idles ~0.38–0.49 V with a few mV of ripple.

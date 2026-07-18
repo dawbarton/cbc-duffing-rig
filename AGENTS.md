@@ -32,6 +32,8 @@ DAC channels used are:
 
 Since the DAC is unipolar (output between 0 and 4.096V), DAC output channel C should be set to approximately 50% range (i.e., 2V) and only DAC output channel A varied.
 
+This file (`AGENTS.md`) is the single source of truth for rig constants and constraints (safe operating limits, voltage ceilings, starting amplitudes, etc); do not duplicate this information as it will go stale. Instead, reference this file.
+
 ## Health Monitoring
 
 The firmware exposes read-only real-time diagnostics that must be checked routinely for anomalies — after every flash, before and after each capture, and periodically during long runs — before trusting data or energising the actuator. See the helic-daq repository notes (`helic-daq/notes.md`) for expected healthy baselines (steady-state zero fault counters, ~36 us wake phase, loop maxima in the 33-47 us range at 8 kHz). Read via `helic-daq status` / `helic-daq get <name>`:
@@ -48,14 +50,6 @@ Use `helic-daq set diag_reset 1` to clear the min/max and counter trackers immed
 Implementation-level notes on the experimental-continuation techniques under investigation
 live in `docs/methods/` (written for agents implementing on this rig; each ends with a
 rig-specific `## Duffing rig` section):
-
-> This file (`AGENTS.md`) is the single source of truth for rig constants and constraints
-> — safe operating limits (voltage ceilings, starting amplitudes), the primary-resonance
-> range, sample rate, channel/DAC mapping, etc. The `docs/methods/` files must *reference*
-> these rather than restating them, so that a change here does not leave stale numbers
-> scattered across the method docs. If you find a duplicated rig constant in a method doc,
-> replace it with a pointer to AGENTS.md.
-
 
 - Control-based continuation (CBC), the core method — stabilising controller,
   non-invasiveness, Fourier-coefficient reference, Newton + pseudo-arclength:
