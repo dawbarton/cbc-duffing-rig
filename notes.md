@@ -264,3 +264,15 @@ hard-constraints (prerequisite for energised closed-loop CBC/PLL/etc).
   was 35 us, and every monitored fault/loss counter remained zero.
 - Raw evidence and the machine-readable summary are under
   `data/2026-07-22-safety-loopback/`.
+
+## 2026-07-22T16:28+00:00 Low-level differential mapping passed
+
+- With a persistent armed connection, captured +50 mV and -50 mV constant
+  commands and a 7 Hz, 0.1 Vpp sine through the A-minus-C to ADC0 loopback.
+- The two constant captures fitted `adc0 = 1.000134 out - 0.269 mV`, with an
+  0.084 mV RMS residual. This directly establishes the intended non-inverting
+  differential polarity and near-unity gain at the fitted terminals.
+- Applied output matched both constant commands and reached +/-50 mV on the
+  sine. The gate stayed armed, untripped, and unclamped; all monitored fault
+  and loss counters stayed zero, wake phase stayed at 36 us, and loop maximum
+  was 38 us. Exception-safe cleanup then disarmed and cleared all generators.

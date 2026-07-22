@@ -17,7 +17,7 @@ confirmation after each completed item.
 - [x] Flash the clean W5500 release image; verify its identity, disarmed state,
       live in-range laser, and real-time health.
 - [x] Capture the disarmed zero-output loopback baseline.
-- [ ] Characterise ADC0 gain, offset, and polarity using small differential
+- [x] Characterise ADC0 gain, offset, and polarity using small differential
       commands and the standard small sine starting point.
 - [ ] Verify explicit-disarm and TCP-disconnect quieting with a small command
       configured.
