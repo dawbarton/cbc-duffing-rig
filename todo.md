@@ -23,9 +23,9 @@ confirmation after each completed item.
       configured.
 - [x] With the exciter isolated, exercise both amplitude-clamp directions and
       verify applied-output telemetry, ADC0, and the safety flags.
-- [ ] Zero every output source, disarm, disconnect, and confirm the final quiet
+- [x] Zero every output source, disarm, disconnect, and confirm the final quiet
       state and clean diagnostics.
-- [ ] Generate the time-series/calibration result, update the project guidance
+- [x] Generate the time-series/calibration result, update the project guidance
       and notes, and commit the verified record.
 
 The laser displacement/staleness trip is outside this run unless David

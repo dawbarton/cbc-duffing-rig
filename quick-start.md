@@ -75,9 +75,17 @@ DAC/signal internals — see `docs/firmware-guide.md`.
 
 - Idle 8 kHz: `loop_time_max` ~33–35 µs, wake phase ~36 µs, fault counters 0,
   `clock_jitter` ~0–1 µs (the safety gate adds no measurable tick cost).
-  `records_dropped` sits at a fixed ~498 startup count (records produced before a
-  UDP consumer connects) — not an anomaly; watch for growth *during* a capture
+  `records_dropped` can have a fixed startup count from records produced before
+  a UDP consumer connects — not an anomaly; watch for growth *during* a capture
   instead.
 - With the laser unpowered, `safety` reads `0b1010` (tripped + quieting) — the
   correct blind-feedback default; once armed with a live laser in-range it reads
   `0b0001` (armed, not tripped).
+- Protocol-v3 image `cd779ce` was commissioned through an A-minus-C to ADC0
+  loopback on 2026-07-22: differential gain was 1.000134 with -0.269 mV offset;
+  explicit and disconnect disarming both quieted a retained command; and both
+  clamp directions matched applied-output telemetry. See `notes.md` and
+  `results/2026-07-22-safety-loopback.png`.
+- **Temporary fitted state (2026-07-22):** ADC0 is connected across DAC A and C
+  for the commissioning loopback, not to its normal experiment signal. Restore
+  the experiment wiring before interpreting ADC0 as the exciter current signal.

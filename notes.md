@@ -306,3 +306,26 @@ hard-constraints (prerequisite for energised closed-loop CBC/PLL/etc).
   set, and the prior quieting history retained. Both 4000-record captures had
   zero fault/loss counters, fixed 36 us wake phase, and 38 us loop maximum.
 - Exception-safe cleanup disarmed first and then cleared all output sources.
+
+## 2026-07-22T16:33+00:00 Safety commissioning complete and rig quiet
+
+- An independent final 8000-record capture had exactly zero applied `out`,
+  -0.219 mV mean ADC0 with 0.084 mV standard deviation, and a live
+  24.817--24.823 mm laser. Safety was `0b1000` (disarmed, untripped,
+  unclamped-after-reset, quieted); every monitored fault/loss counter was zero,
+  wake phase was fixed at 36 us, and loop maximum was 35 us.
+- A fresh post-capture connection confirmed firmware `0.1.0 cd779ce`, arm 0,
+  every forcing and target coefficient zero, table mode off, frequency zero,
+  and clean diagnostics. The DAQ is left powered but logically quiet.
+- Added `src/scripts/plot_safety_loopback.py`. It reproducibly recomputes the
+  calibration and safety-stage summary from the raw NPZ captures and produces
+  `results/2026-07-22-safety-loopback.png` plus a JSON summary. A smoke run
+  completed without plotting/output errors and the rendered figure was
+  inspected.
+- Updated `quick-start.md` with the temporary ADC0 loopback state and empirical
+  sanity results, and updated `docs/firmware-guide.md` to current protocol-v3
+  build/layout instructions and the now-established clamp/quieting evidence.
+- Scope boundary: the displacement/stale-laser trip was not deliberately
+  re-induced in this session; earlier blind-laser hardware evidence and unit
+  tests remain its validation. ADC0 must be restored to the experiment signal
+  before it is interpreted as exciter current feedback.

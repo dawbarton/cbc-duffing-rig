@@ -8,7 +8,8 @@ tables, a swappable controller — is meant to cover the experimental campaign
 without reflashing. This guide is for the rarer occasions when the firmware
 itself must be understood, modified, rebuilt, or reflashed.
 
-Reflects helic-daq commit `6f82ffc`. Authored by the agent.
+Reflects the firmware at helic-daq commit `cd779ce` and its 2026-07-22 hardware
+commissioning. Authored by the agent.
 
 ## Where it lives and what may change
 
@@ -67,9 +68,14 @@ board-w6100`):
 ```
 cargo fmt -p fw-cbc-rig -- --check
 cargo clippy --release -p fw-cbc-rig -- -D warnings
-cargo build --release -p fw-cbc-rig
-uv run --python 3.12 python tools/check_rt_layout.py   # keeps measure/actuate hot symbols in SRAM
+cargo build --release --workspace
+uv run --python 3.12 python tools/check_rt_layout.py   # checks all production RT ELFs
 ```
+
+The layout gate requires release ELFs for CBC, whirl, and Pico 2W; a fresh
+worktree must therefore build the complete firmware workspace before running
+it. Rebuild `fw-cbc-rig` with the intended board feature after any alternate
+board build so the artifact selected for flashing is unambiguous.
 
 If shared code (`helic-drivers`, `firmware/common`) was touched, also run the
 **root** workspace (from `helic-daq/`): `cargo fmt --check`,
@@ -174,11 +180,20 @@ section of `AGENTS.md` for the routine-check procedure and `diag_reset` usage.
   is still `PassThrough`. The safety gate is in place and controller-agnostic,
   but energised closed-loop CBC/PLL also needs a feedback controller (the
   documented `config.rs` swap) — a separate step.
-- **Amplitude-clamp behaviour is unit-tested but not yet exercised live:** with
-  the laser unpowered the gate trips and quiets, so the clamp path (armed +
-  in-range + over-ceiling command) has only been verified by host tests; it will
-  be exercised on the rig once the laser is powered and calibrated.
 
-Time-sensitive commissioning items (e.g. the outstanding scope check that A − C
-is bipolar and non-inverting before the exciter is energised) live in
-`todo.md`, not here.
+## Hardware commissioning status
+
+On 2026-07-22, clean protocol-v3 firmware `cd779ce` was flashed and exercised
+with DAC A and C connected to the differential ADC0 input and the exciter
+isolated. The loopback established non-inverting near-unity A-minus-C mapping,
+verified small-signal sine playback, explicit-disarm quieting,
+control-disconnect quieting, and both amplitude-clamp directions. Applied
+`out`, ADC0, and the safety flags agreed in every phase; all monitored fault and
+loss counters stayed zero. The final state was disarmed with every output source
+zero. Detailed numerical results and reproducible scripts are recorded in the
+project `notes.md` and `src/scripts/`.
+
+The displacement/stale-laser trip was not deliberately re-induced during this
+session; its earlier blind-laser hardware test and unit coverage remain the
+evidence for that path. Time-sensitive physical state lives in `todo.md` and
+`quick-start.md` rather than this fixed-firmware guide.
