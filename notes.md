@@ -329,3 +329,31 @@ hard-constraints (prerequisite for energised closed-loop CBC/PLL/etc).
   re-induced in this session; earlier blind-laser hardware evidence and unit
   tests remain its validation. ADC0 must be restored to the experiment signal
   before it is interpreted as exciter current feedback.
+
+## 2026-07-22T21:14+00:00 Bifurcation-investigation plan agreed; read-only bring-up
+
+- New task: investigate the full bifurcation structure of the Duffing rig. David
+  granted **full autonomy including the energised closed-loop CBC step**; he
+  monitors manually with an emergency shut-off.
+- Physical state: exciter wiring **restored** (ADC0 → exciter current sense,
+  DAC A/C → current-controller input) but exciter supply **not yet powered** —
+  David powers on my go-ahead and will then provide a micrometer proxy for the
+  gap (measures stator position, not the gap directly). Air gap deliberately
+  large → nonlinearity expected weak; how weak is unknown.
+- Expected physics: magnet–stator attraction → **softening** Duffing (peaks bend
+  left; bistable only at a small enough gap). At this gap the nonlinearity may be
+  faint within the 2 V pp budget — a flagged decision point (Phase 2).
+- Agreed 5-phase plan (in todo.md Current): 0 bring-up + tiny drive; 1 linear FRF
+  (0.1 V pp, locate f0/Q); 2 nonlinear open-loop amplitude ladder with up/down
+  sweeps to find folds/hysteresis; 3 firmware PID swap + host-side Newton/
+  arclength CBC to capture the unstable branch; 4 PLL + ARX/Floquet cross-checks;
+  5 synthesis. Firmware change (PID) only needed from Phase 3.
+- Read-only bring-up passed: firmware `0.1.0 cd779ce` (protocol v3, 8 kHz),
+  laser 24.81 mm (in 10–40 mm window), overruns/tick_timeouts 0, clock_jitter
+  1 µs, loop_time_max 35 µs, wake_phase 36 µs. `safety = 0b1010` (latched trip +
+  quieted, disarmed): a historical stale-laser trip from one `laser_uart_errors`
+  hiccup during the 4.8 h uptime; benign (output quiet), clears on arm with the
+  laser in range — to be confirmed as the first live action.
+- Caveat carried forward: adc0 is now (per David) the exciter current sense
+  again, not the loopback — quick-start's "temporary fitted state" note is
+  superseded once power-on is confirmed.
