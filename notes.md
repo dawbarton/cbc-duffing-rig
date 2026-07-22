@@ -183,3 +183,23 @@ hard-constraints (prerequisite for energised closed-loop CBC/PLL/etc).
   U32 params. The library `Device.set(name, 1)` (int) works, which is the intended arming
   path anyway (CLI one-shot disconnects → disarms). Worth a small CLI coercion fix separately.
 - Remaining functional step for energised closed-loop: swap `ActiveController` PassThrough→PID.
+
+## 2026-07-22T16:13+00:00 Safety-stage loopback commissioning agreed
+
+- David connected DAC A to ADC0 positive and DAC C to ADC0 negative so ADC0
+  directly measures the differential output. He confirmed that the exciter is
+  disconnected or powered off and that the laser is powered with an in-range
+  reading.
+- The current helic-daq source is protocol v3 at `cd779ce`; the last safety
+  image documented as flashed was protocol v2 at `c8c3abe`, so a clean rebuild
+  and reflash are required before using the current host library.
+- Agreed sequence: record the plan; create and simulator-test a fail-safe
+  persistent-session test script; clean build and offline verification; flash
+  and health check; disarmed baseline; low-level polarity/gain check;
+  explicit-disarm and disconnect tests; bidirectional clamp test; verified
+  quiet shutdown; analysis, plots, and documentation.
+- Each step pauses for confirmation. The unrelated uncommitted helic-daq edit
+  in `docs/rt_program_proposal.md` must be preserved, so reproducible firmware
+  will be built from a clean detached worktree.
+- A laser trip is not part of this run unless separately approved; do not
+  manufacture one by changing calibration parameters.

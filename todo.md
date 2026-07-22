@@ -2,28 +2,35 @@
 
 ## Current
 
-Firmware safety stage implemented and flashed (`cbc-rig`, helic-daq commit
-`c8c3abe`): per-tick output gate (amplitude clamp to 0.096–4.0 V DAC window,
-displacement 10–40 mm + laser-staleness trip, arm flag disarmed-after-flash,
-disconnect-disarm), applied-output telemetry, `arm`/`safety` params. Verified
-offline (host tests, clippy, both boards, RT-layout) and on-rig (timing 33–34 µs
-preserved, arm/disarm/disconnect/trip behaviour). Design record in
-`docs/old/2026-07-18-firmware-safety-stage-design.md`.
+Commission the firmware safety stage through the DAC A/C to ADC0 differential
+loopback. The current host and firmware source use protocol v3 at helic-daq
+commit `cd779ce`; the previously flashed safety image was protocol v2 and must
+be rebuilt and flashed before testing. Execute one item at a time and pause for
+confirmation after each completed item.
 
-Blocked on physical state:
-- Exciter and laser power supplies are OFF (as of 2026-07-17): actuation moves
-  the DAC but produces no current/motion; `laser` reads 0. Re-enable before any
-  energised test. With the laser off the safety gate correctly trips and quiets
-  (`safety = 0b1010`).
-- [ ] Electrical check on a scope that A - C is bipolar and non-inverting
-      before powering the exciter (software cannot verify DAC pin voltages).
-- [ ] First energised test: `set arm 1` over a persistent host session, then
-      0.1 V pp (amplitude 0.05 V) sine near 5-10 Hz, watch laser displacement,
-      `set arm 0` / disconnect to quiet on any instability.
-- [ ] Exercise the amplitude clamp live (armed + in-range laser + over-ceiling
-      command → `out` clamped, `safety` bit2 set) — only unit-tested so far.
-- [ ] Once confirmed, prune the "power off" / scope-check caveats that remain in
-      `notes.md` history (already removed from quick-start and firmware guide).
+- [x] Agree the complete commissioning plan and confirm the physical setup.
+- [x] Record the agreed plan and setup; commit the documentation.
+- [ ] Add and simulator-test a fail-safe persistent-session Python test script;
+      commit it.
+- [ ] Build and verify the protocol-v3 host and firmware from a clean detached
+      worktree, preserving unrelated edits in the main helic-daq worktree.
+- [ ] Flash the clean W5500 release image; verify its identity, disarmed state,
+      live in-range laser, and real-time health.
+- [ ] Capture the disarmed zero-output loopback baseline.
+- [ ] Characterise ADC0 gain, offset, and polarity using small differential
+      commands and the standard small sine starting point.
+- [ ] Verify explicit-disarm and TCP-disconnect quieting with a small command
+      configured.
+- [ ] With the exciter isolated, exercise both amplitude-clamp directions and
+      verify applied-output telemetry, ADC0, and the safety flags.
+- [ ] Zero every output source, disarm, disconnect, and confirm the final quiet
+      state and clean diagnostics.
+- [ ] Generate the time-series/calibration result, update the project guidance
+      and notes, and commit the verified record.
+
+The laser displacement/staleness trip is outside this run unless David
+separately approves a coordinated physical interruption; do not induce it by
+changing the laser calibration parameter.
 
 ## Future
 
