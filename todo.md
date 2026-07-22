@@ -21,7 +21,7 @@ confirmation after each completed item.
       commands and the standard small sine starting point.
 - [x] Verify explicit-disarm and TCP-disconnect quieting with a small command
       configured.
-- [ ] With the exciter isolated, exercise both amplitude-clamp directions and
+- [x] With the exciter isolated, exercise both amplitude-clamp directions and
       verify applied-output telemetry, ADC0, and the safety flags.
 - [ ] Zero every output source, disarm, disconnect, and confirm the final quiet
       state and clean diagnostics.

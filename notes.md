@@ -292,3 +292,17 @@ hard-constraints (prerequisite for energised closed-loop CBC/PLL/etc).
 - Strengthened the forthcoming clamp phase to require ADC0 to track the
   applied plateau and forcing telemetry to retain the over-limit request,
   rather than merely reporting those values.
+
+## 2026-07-22T16:30+00:00 Bidirectional firmware clamp passed
+
+- With the exciter isolated and the laser live/in-range, retained +2.0 V and
+  -2.0 V forcing requests for 0.5 s each. The applied-output telemetry clamped
+  to exactly symmetric +1.9519998 V and -1.9519998 V means.
+- ADC0 directly observed +1.952160 V and -1.952464 V means across A minus C;
+  its small offset is consistent with the low-level mapping. The upstream
+  forcing telemetry retained each +/-2.0 V request, distinguishing the safety
+  clamp from command modification.
+- `safety = 0b1101` during both captures: armed, untripped, clamp-since-reset
+  set, and the prior quieting history retained. Both 4000-record captures had
+  zero fault/loss counters, fixed 36 us wake phase, and 38 us loop maximum.
+- Exception-safe cleanup disarmed first and then cleared all output sources.
