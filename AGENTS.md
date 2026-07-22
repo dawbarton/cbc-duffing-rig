@@ -12,7 +12,7 @@ Because you are interacting with a physical mechanical experiment, you should sh
 
 ## Experiment
 
-The experiment is a vertically mounted cantilever beam with a tip mass. There are magnets on the tip mass which are attracted to an iron stator, which provide the main nonlinearity for the system. The iron stator has a coil wrapped around it to detect the motion of the magnetic field. The air gap between the magnets and the stator is controllable via a stepper motor (not yet attached). The beam is excited by an electromagnetic exciter at the base, and the tip displacement is measured using a laser displacement sensor.
+The experiment is a vertically mounted cantilever beam with a tip mass. There are magnets on the tip mass which are attracted to an iron stator, which provide the main nonlinearity for the system. The iron stator has a coil wrapped around it to detect the motion of the magnetic field. The air gap between the magnets and the stator is controllable via a stepper motor (not yet attached). If you do not know the current air gap, ask David for confirmation to ensure repeatability. The beam is excited by an electromagnetic exciter at the base, and the tip displacement is measured using a laser displacement sensor.
 
 The primary resonance is around 5-10Hz, though it can move depending on the air gap. A 0.1V peak-to-peak voltage input to the exciter is an appropriately small input starting point. Do not go above 2V peak-to-peak for now.
 
@@ -38,7 +38,7 @@ This file (`AGENTS.md`) is the single source of truth for rig constants and cons
 
 ## Health Monitoring
 
-The firmware exposes read-only real-time diagnostics that must be checked routinely for anomalies — after every flash, before and after each capture, and periodically during long runs — before trusting data or energising the actuator. See the helic-daq repository notes (`helic-daq/notes.md`) for expected healthy baselines (steady-state zero fault counters, ~36 us wake phase, loop maxima in the 33-47 us range at 8 kHz). Read via `helic-daq status` / `helic-daq get <name>`:
+The firmware exposes read-only real-time diagnostics that must be checked routinely for anomalies — after every flash, before and after each capture, and periodically during long runs — before trusting data or energising the actuator. See the helic-daq repository notes (`helic-daq/quick-start.md`) for expected healthy baselines (steady-state zero fault counters, ~36 us wake phase, loop maxima in the 33-47 us range at 8 kHz). Read via `helic-daq status` / `helic-daq get <name>`:
 
 - `overruns`, `tick_timeouts`, `clock_jitter` — must remain 0 in steady state; any growth means the real-time loop is missing its deadline or the sample clock is drifting.
 - `loop_time_last` / `loop_time_max`, `wake_phase_min` / `wake_phase_max`, `t_measure_max` / `t_actuate_max` / `t_rest_max` — per-tick timing budget (125 us at 8 kHz); watch for maxima approaching the tick period.
@@ -65,6 +65,9 @@ rig-specific `## Duffing rig` section):
   `docs/methods/adaptive-filtering-cbc.md`.
 - Derivative-free arclength CBC — Jacobian-free predictor–corrector:
   `docs/methods/derivative-free-arclength-cbc.md`.
+- Piecewise linear continuation (PLC) — derivative-free simplicial branch following,
+  grain/scaling, and the `SimplexContinuation.jl` implementation:
+  `docs/methods/piecewise-linear-continuation.md`.
 - Gaussian-process-regression continuation — surrogate Jacobian and uncertainty
   quantification: `docs/methods/gaussian-process-continuation.md`.
 
@@ -103,7 +106,9 @@ The incremental notes file is `/workspace/cbc-duffing-rig/notes.md`; always refe
 
 followed by bullet points covering key ideas, decisions, results, and open questions. Include references to external sources where relevant. Keep notes concise and high-signal; this is cross-session context, not a transcript. Ensure the correct ISO datetime is used by calling `date -Iminutes` with Bash.
 
-Also maintain a quick-start notes file `/workspace/cbc-duffing-rig/quick-start.md` containing key findings / learning points that are useful for an agent starting from a clean context. Read this file at the start of every session and update it whenever meaningful information is gathered. Do not repeat information that is already in `AGENTS.md` or `todo.md`. Information could relate to the dynamics of the experiment or practical implementation tips or any other high-value information. Keep this file reasonably short (ideally under 200 lines).
+Maintain a quick-start notes file `/workspace/cbc-duffing-rig/quick-start.md` containing key findings / learning points that are useful for an agent starting from a clean context. Read this file at the start of every session and update it whenever meaningful information is gathered. Do not repeat information that is already in `AGENTS.md` or `todo.md`. Keep this file reasonably short (ideally under 200 lines).
+
+Similar, maintain an experimental findings file `/workspace/cbc-duffing-rig/experimental-findings.md` that contains key experimental features (e.g., linear resonant frequency at a particular air gap). Ensure that sufficient information is captured to allow later reproduction. Update this file whenever the experiment is run and new informative data is obtained.
 
 ## Folder Structure
 
