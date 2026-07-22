@@ -10,7 +10,7 @@ confirmation after each completed item.
 
 - [x] Agree the complete commissioning plan and confirm the physical setup.
 - [x] Record the agreed plan and setup; commit the documentation.
-- [ ] Add and simulator-test a fail-safe persistent-session Python test script;
+- [x] Add and simulator-test a fail-safe persistent-session Python test script;
       commit it.
 - [ ] Build and verify the protocol-v3 host and firmware from a clean detached
       worktree, preserving unrelated edits in the main helic-daq worktree.

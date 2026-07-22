@@ -203,3 +203,21 @@ hard-constraints (prerequisite for energised closed-loop CBC/PLL/etc).
   will be built from a clean detached worktree.
 - A laser trip is not part of this run unless separately approved; do not
   manufacture one by changing calibration parameters.
+
+## 2026-07-22T16:22+00:00 Loopback commissioning harness
+
+- Added `src/scripts/commission_safety_loopback.py`, a phase-separated Python
+  harness for the disarmed baseline, low-level mapping and sine capture,
+  disconnect-disarm test, bidirectional clamp test, and final quiet check.
+- Normal phases use a persistent control connection and disarm before clearing
+  all output-producing paths in exception-safe cleanup. The disconnect phase
+  deliberately closes while armed, then verifies quieting from a new control
+  connection before cleanup.
+- Acceptance checks cover firmware health counters, tick timing, UDP loss,
+  record-drop growth, safety flags, output/ADC zero, loopback polarity/gain,
+  clamp activation, and clamp symmetry. Rig amplitudes remain command-line
+  inputs so `AGENTS.md` stays the source of truth.
+- The protocol-v3 simulator self-test passed (160 records, zero loss/faults),
+  exercising persistent control, streaming, data saving, loopback tracking,
+  cleanup, and disconnect state. The simulator does not model the real safety
+  gate, so clamp and disarmed-output acceptance remain hardware tests.
