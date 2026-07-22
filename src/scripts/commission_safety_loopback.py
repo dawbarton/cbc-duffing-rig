@@ -410,11 +410,23 @@ def run_clamp(args: argparse.Namespace) -> dict[str, Any]:
                     dev, args.output_dir, label, args.seconds
                 )
                 plateau = float(np.mean(data["out"]))
+                forcing = float(np.mean(data["forcing"]))
+                adc_plateau = float(np.mean(data["adc0"]))
                 plateaus.append(plateau)
+                if abs(forcing - command) > args.output_tolerance:
+                    raise CommissioningError(
+                        f"{label}: forcing telemetry {forcing:g} V does not retain "
+                        f"request {command:g} V"
+                    )
                 if abs(plateau) >= abs(command) - args.clamp_min_gap:
                     raise CommissioningError(
                         f"{label}: output {plateau:g} V was not detectably clamped "
                         f"below request {command:g} V"
+                    )
+                if abs(adc_plateau - plateau) > args.output_tolerance:
+                    raise CommissioningError(
+                        f"{label}: ADC0 plateau {adc_plateau:g} V does not track "
+                        f"applied output {plateau:g} V"
                     )
                 if not health["safety_flags"]["clamped_since_reset"]:
                     raise CommissioningError(f"{label}: clamp safety flag was not set")

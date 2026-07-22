@@ -276,3 +276,19 @@ hard-constraints (prerequisite for energised closed-loop CBC/PLL/etc).
   sine. The gate stayed armed, untripped, and unclamped; all monitored fault
   and loss counters stayed zero, wake phase stayed at 36 us, and loop maximum
   was 38 us. Exception-safe cleanup then disarmed and cleared all generators.
+
+## 2026-07-22T16:30+00:00 Explicit and disconnect quieting passed
+
+- Retained a +50 mV forcing command while testing the two disarm paths
+  independently. Explicit `arm = 0` changed applied `out` from +50 mV to
+  exactly zero and returned ADC0 from +49.734 mV to -0.224 mV; the forcing
+  telemetry remained +50 mV.
+- Re-arming restored +50 mV. Closing that armed control connection without
+  command cleanup then cleared the armed state; a fresh connection captured
+  exactly zero applied output and -0.234 mV mean ADC0 while the +50 mV forcing
+  command was still configured.
+- Safety remained untripped/unclamped, all monitored fault and loss counters
+  stayed zero, wake phase was fixed at 36 us, and loop maximum was 37 us.
+- Strengthened the forthcoming clamp phase to require ADC0 to track the
+  applied plateau and forcing telemetry to retain the over-limit request,
+  rather than merely reporting those values.

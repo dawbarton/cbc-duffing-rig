@@ -19,7 +19,7 @@ confirmation after each completed item.
 - [x] Capture the disarmed zero-output loopback baseline.
 - [x] Characterise ADC0 gain, offset, and polarity using small differential
       commands and the standard small sine starting point.
-- [ ] Verify explicit-disarm and TCP-disconnect quieting with a small command
+- [x] Verify explicit-disarm and TCP-disconnect quieting with a small command
       configured.
 - [ ] With the exciter isolated, exercise both amplitude-clamp directions and
       verify applied-output telemetry, ADC0, and the safety flags.
