@@ -315,10 +315,31 @@ def run_disconnect(args: argparse.Namespace) -> dict[str, Any]:
         require_armed_untripped(dev)
         set_constant_forcing(dev, args.small_level)
         active, active_health, active_path = capture_checked(
-            dev, args.output_dir, "disconnect_before_close", args.seconds
+            dev, args.output_dir, "explicit_disarm_before", args.seconds
         )
         if abs(float(np.mean(active["out"])) - args.small_level) > args.output_tolerance:
-            raise CommissioningError("pre-disconnect applied output does not match the command")
+            raise CommissioningError("pre-disarm applied output does not match the command")
+
+        dev.set("arm", 0)
+        explicitly_quiet, explicit_health, explicit_path = capture_checked(
+            dev, args.output_dir, "explicit_disarm_after", args.seconds
+        )
+        if int(explicit_health["arm"]) != 0 or explicit_health["safety_flags"]["armed"]:
+            raise CommissioningError("explicit disarm did not clear the armed state")
+        if np.max(np.abs(explicitly_quiet["out"])) > args.zero_tolerance:
+            raise CommissioningError("explicit disarm did not quiet applied output")
+        if (
+            abs(float(np.mean(explicitly_quiet["forcing"])) - args.small_level)
+            > args.output_tolerance
+        ):
+            raise CommissioningError("explicit-disarm test lost its configured forcing command")
+
+        require_armed_untripped(dev)
+        rearmed, rearmed_health, rearmed_path = capture_checked(
+            dev, args.output_dir, "disconnect_before_close", args.seconds
+        )
+        if abs(float(np.mean(rearmed["out"])) - args.small_level) > args.output_tolerance:
+            raise CommissioningError("re-armed output does not match the command")
     except BaseException:
         try:
             force_safe(dev)
@@ -350,6 +371,16 @@ def run_disconnect(args: argparse.Namespace) -> dict[str, Any]:
                     "capture": active_path,
                     "health": active_health,
                     "stats": basic_stats(active),
+                },
+                "explicit_disarm": {
+                    "capture": explicit_path,
+                    "health": explicit_health,
+                    "stats": basic_stats(explicitly_quiet),
+                },
+                "rearmed_before_disconnect": {
+                    "capture": rearmed_path,
+                    "health": rearmed_health,
+                    "stats": basic_stats(rearmed),
                 },
                 "after": {
                     "capture": quiet_path,
