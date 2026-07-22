@@ -253,3 +253,14 @@ hard-constraints (prerequisite for energised closed-loop CBC/PLL/etc).
   record drops, and laser fault counters. Loop maximum was 35 us and wake
   phase was fixed at 36 us. The pre-reset startup/debugger history had an
   89 us wake maximum and was correctly excluded from the run baseline.
+
+## 2026-07-22T16:27+00:00 Disarmed loopback baseline passed
+
+- Captured 8000 full-rate records with all output sources zero and the safety
+  gate disarmed. Applied `out` was exactly zero; ADC0 measured a -0.228 mV mean,
+  0.083 mV standard deviation, and -0.534 to +0.076 mV range across A minus C.
+- The laser remained at 24.816--24.823 mm. Safety stayed `0b1000` (disarmed,
+  untripped, unclamped, quieted), the wake phase stayed at 36 us, loop maximum
+  was 35 us, and every monitored fault/loss counter remained zero.
+- Raw evidence and the machine-readable summary are under
+  `data/2026-07-22-safety-loopback/`.

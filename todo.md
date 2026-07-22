@@ -16,7 +16,7 @@ confirmation after each completed item.
       worktree, preserving unrelated edits in the main helic-daq worktree.
 - [x] Flash the clean W5500 release image; verify its identity, disarmed state,
       live in-range laser, and real-time health.
-- [ ] Capture the disarmed zero-output loopback baseline.
+- [x] Capture the disarmed zero-output loopback baseline.
 - [ ] Characterise ADC0 gain, offset, and polarity using small differential
       commands and the standard small sine starting point.
 - [ ] Verify explicit-disarm and TCP-disconnect quieting with a small command
