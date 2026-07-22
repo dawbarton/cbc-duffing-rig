@@ -5,6 +5,12 @@ health monitoring). This file is how to **run experiments**, assuming the
 `cbc-rig` firmware is fixed. To build, flash, or change the firmware — or for the
 DAC/signal internals — see `docs/firmware-guide.md`.
 
+## Repository setup
+
+The `helic-daq/` dependency is a Git submodule pinned by this repository. Clone
+with `git clone --recurse-submodules <repository-url>`, or initialise it in an
+existing checkout with `git submodule update --init --recursive`.
+
 ## Talking to the DAQ
 
 - Device: `cbc-rig` at static IP `192.168.1.235`.

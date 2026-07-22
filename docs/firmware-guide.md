@@ -13,8 +13,8 @@ commissioning. Authored by the agent.
 
 ## Where it lives and what may change
 
-- Crate `fw-cbc-rig` at `helic-daq/firmware/experiments/cbc-rig` (reachable via
-  the `helic-daq/` symlink in this project).
+- Crate `fw-cbc-rig` at `helic-daq/firmware/experiments/cbc-rig` (provided by
+  the pinned `helic-daq/` Git submodule in this project).
 - helic-daq is a **multi-experiment platform**. Only the `cbc-rig` crate may be
   modified; `helic-drivers`, `firmware/common`, and core code are shared with
   other experiments — change them only with care and a clear reason, and re-run
