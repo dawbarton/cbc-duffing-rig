@@ -237,3 +237,19 @@ hard-constraints (prerequisite for energised closed-loop CBC/PLL/etc).
   board.
 - The only warning was the already-documented future-incompatibility warning
   from the `proc-macro-error2` dependency. The clean worktree remained clean.
+
+## 2026-07-22T16:27+00:00 Protocol-v3 image flashed and healthy
+
+- Flashed the clean W5500 release image with the documented `cargo run` /
+  `probe-rs run` path. The boot banner reported exactly `helic-daq 0.1.0
+  cd779ce`; protocol-v3 discovery reported 41 parameters and 14 sources at
+  8 kHz.
+- Laser configuration completed normally and its first measurement was in
+  range. Host checks observed approximately 24.818 mm.
+- The post-reset gate was disarmed and untripped (`safety = 0b1000`): output
+  was quieted but had neither tripped nor clamped.
+- After resetting diagnostics, the attached and post-debugger-detachment
+  checks both had zero overruns, tick timeouts, clock jitter, command backlog,
+  record drops, and laser fault counters. Loop maximum was 35 us and wake
+  phase was fixed at 36 us. The pre-reset startup/debugger history had an
+  89 us wake maximum and was correctly excluded from the run baseline.

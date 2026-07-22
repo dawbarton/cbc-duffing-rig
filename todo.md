@@ -14,7 +14,7 @@ confirmation after each completed item.
       commit it.
 - [x] Build and verify the protocol-v3 host and firmware from a clean detached
       worktree, preserving unrelated edits in the main helic-daq worktree.
-- [ ] Flash the clean W5500 release image; verify its identity, disarmed state,
+- [x] Flash the clean W5500 release image; verify its identity, disarmed state,
       live in-range laser, and real-time health.
 - [ ] Capture the disarmed zero-output loopback baseline.
 - [ ] Characterise ADC0 gain, offset, and polarity using small differential
