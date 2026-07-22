@@ -221,3 +221,19 @@ hard-constraints (prerequisite for energised closed-loop CBC/PLL/etc).
   exercising persistent control, streaming, data saving, loopback tracking,
   cleanup, and disconnect state. The simulator does not model the real safety
   gate, so clamp and disarmed-output acceptance remain hardware tests.
+
+## 2026-07-22T16:25+00:00 Protocol-v3 clean build verification
+
+- Created a clean detached helic-daq worktree at exact commit `cd779ce`; the
+  main worktree's unrelated `docs/rt_program_proposal.md` edit remains intact.
+- Passed root Rust formatting, all-target/all-feature clippy with warnings
+  denied, and all tests (119 unit/integration tests plus doc tests). Passed all
+  61 Python host tests and all 87 Julia host tests. MATLAB is not installed, so
+  its tests remain unavailable.
+- Passed release CBC clippy/build for W5500 and W6100. The firmware RT-layout
+  gate now requires all three production ELFs; after building the complete
+  firmware workspace it passed for CBC, whirl, and Pico 2W for both CBC board
+  build states. Rebuilt W5500 last so the flash artifact matches the fitted
+  board.
+- The only warning was the already-documented future-incompatibility warning
+  from the `proc-macro-error2` dependency. The clean worktree remained clean.
