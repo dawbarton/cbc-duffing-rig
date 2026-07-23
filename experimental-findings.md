@@ -101,3 +101,21 @@ See `AGENTS.md` for fixed constants/limits and `quick-start.md` for operation.
 - Note: after the PID reflash the DC operating point returned to laser≈24.807 mm
   (the post-power-trip +275 mV adc0 / 24.73 mm shift did not persist across the
   reflash) — consistent with it having been an amplifier power-up state.
+
+## 2026-07-23 CBC forced frequency response (non-invasive), forcing 0.1 V
+
+- First control-based-continuation result: the forced FRF traced with a
+  non-invasive stabilising controller (Kp=-0.1, Kd=-0.02), fixed-point corrector
+  driving |control|<4 mV. Data `data/2026-07-23-cbc-sweep-0p1/`, figure
+  `results/2026-07-23-cbc-sweep-0p1.png`.
+- **Softening forced response**: resonance peak bent to **~9.70 Hz** (from linear
+  9.80 Hz), peak ~450 µm at forcing 0.1 V (0.2 Vpp).
+- **Folds / bistability near ~9.68 Hz** (narrow at this forcing — near the cusp):
+  down-sweep holds the upper branch to 9.70 Hz (448 µm) then drops; up-sweep
+  holds the lower branch to 9.65 Hz (159 µm) then jumps to 452 µm at 9.70 Hz.
+- Near-fold points hit the 30-iteration cap (control 5–12 mV) — the fixed-point
+  is marginal exactly where the unstable middle branch is; frequency-stepping
+  gets the two stable branches only. Middle branch needs amplitude continuation.
+- CBC advantage demonstrated: non-invasive (true open-loop response) and free of
+  the settling-induced false hysteresis that plagues open-loop stepped sweeps at
+  Q≈155.
