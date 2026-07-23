@@ -448,3 +448,23 @@ hard-constraints (prerequisite for energised closed-loop CBC/PLL/etc).
   gains persist -> always clean up (arm 0, gains 0, forcing/target 0) after.
 - First CBC branch running: forcing 0.1V, 10.4 Hz down through resonance,
   ds=0.2, Kp=-0.1 Kd=-0.02, settle 3.5s. Expect softening S-curve with folds.
+
+## 2026-07-23T10:51+00:00 CBC corrector: Newton fragile, fixed-point robust
+
+- The 2D Newton/Broyden CBC corrector (unknowns omega,a1,b1; residual = control
+  fundamental) proved **fragile** on this system: the reference-response map near
+  the high-Q resonance is ill-conditioned/near-rank-deficient because the
+  reference PHASE is a weakly-observable gauge (the response phase locks to the
+  forcing). Same code+params gave stochastic outcomes (ctrl 2.5mV vs 16.8mV);
+  scaled coords, trust-region, pinv all only partly helped (stall/wander).
+- **Fix: damped fixed-point corrector** R<-R+alpha(Rot(phi)X-R), phi = firmware->
+  projection phase from the known pure-sine forcing. Drives control->0
+  MONOTONICALLY (inline test: 10.2Hz 70->3.3mV in 8 iters; 9.9Hz slower but
+  monotonic). Robust, no Jacobian. Implemented in src/scripts/cbc_sweep.py.
+- Frequency-stepped (warm-started) fixed-point maps the non-invasive STABLE
+  branches + brackets the folds. Middle (unstable) branch needs amplitude-
+  parameterised continuation (TODO) since freq is non-monotonic there.
+- First CBC sweep running: forcing 0.1V, 10.4<->9.2Hz both directions, Kp=-0.1
+  Kd=-0.02, alpha 0.8. Expect softening S with up/down hysteresis at the folds.
+- Reminder: Bash tool default timeout 120s; use timeout= param for longer
+  foreground rig runs. run_in_background needs the command passed DIRECTLY.
