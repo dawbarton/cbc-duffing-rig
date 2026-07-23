@@ -94,6 +94,7 @@ class CBCRig:
         # rotation between the reference knobs and the projected control).
         ctrl = np.asarray(data["out"]) - np.asarray(data["forcing"])
         ch = project_harmonics(ctrl, idx, omega, self.fs, 1)
+        fh = project_harmonics(np.asarray(data["forcing"]), idx, omega, self.fs, 1)
         Xa1 = float(lh["a"][0])
         Xb1 = float(lh["b"][0])
         amp = float(np.hypot(Xa1, Xb1))  # physical laser fundamental amplitude
@@ -102,6 +103,7 @@ class CBCRig:
             "X3": float(lh["amp"][2]) if self.n_project >= 3 else 0.0,
             "ctrl_a1": float(ch["a"][0]), "ctrl_b1": float(ch["b"][0]),
             "ctrl_fund": float(ch["amp"][0]),
+            "phi": float(np.arctan2(fh["a"][0], fh["b"][0])),  # forcing phase (proj)
             "span": span, "verdict": verdict,
             "safety": int(health["safety"]),
         }
@@ -156,6 +158,7 @@ def main() -> int:
     p.add_argument("--tol", type=float, default=3e-3, help="|G| convergence tol (mm)")
     p.add_argument("--max-corr", type=int, default=6)
     p.add_argument("--trust", type=float, default=0.3, help="trust-region cap on scaled step norm")
+    p.add_argument("--warmup", type=int, default=10, help="fixed-point warm-start iters for P0")
     p.add_argument("--s-omega", type=float, default=1.0, help="freq scale (Hz)")
     p.add_argument("--s-amp", type=float, default=0.1, help="amplitude scale (mm)")
     p.add_argument("--rest-mm", type=float, default=24.8)
@@ -191,51 +194,58 @@ def main() -> int:
             rig = CBCRig(dev, fs, r0, args.settle, args.capture, guard)
 
             def correct(u0, constraint, Jv_init=None):
-                """Robust Gauss-Newton corrector in SCALED coordinates v=u/S.
+                """Broyden corrector in SCALED coordinates v=u/S (fast).
 
-                constraint(u) -> (value, grad_v[3]) with grad w.r.t. v. Extended
-                residual H = [G_control(2, V); constraint(1)]. The 2x3 scaled
-                control-Jacobian dG/dv is recomputed by FD each iteration (no
-                Broyden drift), the step is a pseudo-inverse (regularised lstsq)
-                solve trust-region-limited to ||dv|| <= trust, and a halving line
-                search never accepts a step increasing |H|. This handles the
-                weakly-observable reference-phase (gauge) direction: the
-                pseudo-inverse moves in the well-determined amplitude/frequency
-                direction and ignores the degenerate one. Jv_init is unused
-                (kept for call-site compatibility)."""
+                constraint(u) -> (value, grad_v[3]). Extended residual
+                H = [G_control(2, V); constraint(1)]. The 2x3 scaled Jacobian
+                dG/dv is FD-seeded once (or carried in via Jv_init) and
+                Broyden-updated thereafter, so each point costs ~1 FD + a few
+                single evals. This is robust here ONLY because strong damping
+                (large |Kd|) conditions the reference->control map (cond ~ 1);
+                see the report. A halving line search never accepts a step that
+                increases |H|. Returns the final dG/dv for carry-over."""
                 u = np.array(u0, float)
                 G0, meta = rig.residual(u)
-                cval, _ = constraint(u)
+                Jv = fd_jacobian_v(rig, u, G0, S) if Jv_init is None else Jv_init.copy()
+                cval, cgrad = constraint(u)
+                B = np.vstack([Jv, cgrad])
                 H = np.array([G0[0], G0[1], cval])
+                if args.verbose:
+                    print(f"    init |G|={np.hypot(*G0)*1e3:.2f}mV cond={np.linalg.cond(B):.1f}")
                 for it in range(args.max_corr):
-                    if np.hypot(G0[0], G0[1]) < args.tol and abs(cval) < args.tol:
-                        return u, meta, True, it, None
-                    Jv = fd_jacobian_v(rig, u, G0, S)     # fresh FD each iteration
-                    _, cgrad = constraint(u)
-                    B = np.vstack([Jv, cgrad])
-                    dv = np.linalg.lstsq(B, -H, rcond=1e-3)[0]  # regularised
+                    # column-equilibrated solve: balances the omega vs amplitude
+                    # columns (very different physical scales near a fold) so the
+                    # 3x3 is well-conditioned regardless of operating point.
+                    cn = np.linalg.norm(B, axis=0)
+                    cn[cn == 0] = 1.0
+                    dv = np.linalg.lstsq(B / cn, -H, rcond=1e-8)[0] / cn
                     nd = np.linalg.norm(dv)
-                    if nd > args.trust:                   # trust-region cap
+                    if nd > args.trust:
                         dv = dv * (args.trust / nd)
                     Hnorm = np.linalg.norm(H)
                     step = 1.0
-                    un, Gn, mn, cvn = u, G0, meta, cval
-                    for _ls in range(5):                  # backtracking line search
+                    for _ls in range(5):
                         cand = u + step * (S * dv)
                         Gc, mc = rig.residual(cand)
-                        cvc, _ = constraint(cand)
-                        if np.linalg.norm([Gc[0], Gc[1], cvc]) < Hnorm:
-                            un, Gn, mn, cvn = cand, Gc, mc, cvc
+                        cvc, cgc = constraint(cand)
+                        Hc = np.array([Gc[0], Gc[1], cvc])
+                        if np.linalg.norm(Hc) < Hnorm:
                             break
                         step *= 0.5
-                    u, G0, meta, cval = un, Gn, mn, cvn
-                    H = np.array([G0[0], G0[1], cval])
+                    dV = (cand - u) / S
+                    dH = Hc - H
+                    if dV @ dV > 0:                        # Broyden rank-1 update
+                        B = B + np.outer((dH - B @ dV), dV) / (dV @ dV)
+                    B[2] = cgc                             # exact constraint row
+                    u, G0, meta, cval, H = cand, Gc, mc, cvc, Hc
+                    nrm = np.hypot(G0[0], G0[1])
                     if args.verbose:
-                        print(f"    it{it}: |G|={np.hypot(G0[0],G0[1])*1e3:.2f}mV step={step:.2f} "
+                        print(f"    it{it}: |G|={nrm*1e3:.2f}mV step={step:.2f} "
                               f"u=({u[0]:.3f},{u[1]*1e3:.1f},{u[2]*1e3:.1f})um "
-                              f"amp={meta['amp']*1e3:.1f}um cond={np.linalg.cond(B):.0f}")
-                ok = np.hypot(G0[0], G0[1]) < args.tol and abs(cval) < args.tol
-                return u, meta, ok, args.max_corr, None
+                              f"amp={meta['amp']*1e3:.1f}um")
+                    if nrm < args.tol and abs(cval) < args.tol:
+                        return u, meta, True, it + 1, B[:2].copy()
+                return u, meta, False, args.max_corr, B[:2].copy()
 
             def persist():
                 (outdir / "cbc_branch.json").write_text(json.dumps(
@@ -245,8 +255,20 @@ def main() -> int:
             def fix_freq(target):  # constraint: omega = target; grad_v = [S0,0,0]
                 return lambda uu: (uu[0] - target, np.array([S[0], 0.0, 0.0]))
 
-            # --- first point: fix frequency (natural parameter) ---
-            u = np.array([args.f_start, 0.02, -0.05])  # small ref guess
+            def warmstart(omega, R, iters, alpha=0.8):
+                """Damped fixed-point to get a reference near the orbit (robust on
+                a stable branch), so Newton starts close (essential far from the
+                trivial reference at large-amplitude near-fold points)."""
+                for _ in range(iters):
+                    _, m = rig.residual(np.array([omega, R[0], R[1]]))
+                    X = np.array([m["Xa1"], m["Xb1"]])
+                    c, s = np.cos(m["phi"]), np.sin(m["phi"])
+                    R = R + alpha * (np.array([[c, -s], [s, c]]) @ X - R)
+                return R
+
+            # --- first point: fix frequency; warm-start the reference ---
+            R0 = warmstart(args.f_start, np.array([0.0, 0.0]), args.warmup)
+            u = np.array([args.f_start, R0[0], R0[1]])
             u, meta, ok, its, Jv = correct(u, fix_freq(args.f_start))
             print(f"  P0 f={u[0]:.3f} amp={meta['amp']*1e3:.1f}um ctrl_fund={meta['ctrl_fund']*1e3:.2f}mV "
                   f"conv={ok}({its}) X3/X1={meta['X3']/max(meta['amp'],1e-9):.3f}")

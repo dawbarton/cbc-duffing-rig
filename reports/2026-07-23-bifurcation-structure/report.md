@@ -105,15 +105,29 @@ large-amplitude resonance near 9.68–9.70 Hz).
 
 ## 6. Limitations and future work
 
-- **Unstable middle branch not captured.** Frequency-stepping reaches only the
-  stable branches; the middle branch needs a corrector that converges to a
-  fixed-point-unstable orbit (Newton/Broyden), which was not made robust on this
-  ill-conditioned problem. Amplitude-controlled continuation was attempted but
-  matched only |X| (not phase), so it was invasive. A robust route:
-  a Newton corrector in a phase-anchored coordinate (remove the gauge), or
-  Gauss–Newton on the full harmonic residual with response-referenced
-  regularisation. `src/scripts/cbc_continuation.py` and `cbc_middle.py` are the
-  starting points.
+- **Unstable middle branch not captured** — attempted in depth; the remaining
+  obstacle is *root selection*, not conditioning. Findings:
+  - The Newton corrector's ill-conditioning is caused by the sharply *resonant*
+    reference→control sensitivity (`∂control/∂R = g(I−T)`, T = complementary
+    sensitivity). **Strong damping fixes it**: the 2×2 `∂control/∂(a1,b1)`
+    condition number falls from 6.9 at Kd=−0.02 to **1.0 at Kd=−0.12** — and,
+    crucially, at the non-invasive point control→0 so the extra damping does
+    *not* bias the measured orbit. Use large |Kd| for CBC correction here.
+  - A fixed-point warm-start + column-equilibrated arclength Newton
+    (`cbc_continuation.py`) then converges the *approach*, but still stalls
+    right at the fold; a fixed-ω 2×2 Newton (well-conditioned at high Kd)
+    converges cleanly but, from any starting amplitude, lands on the **dominant
+    (upper) stable orbit** — it does not select the unstable middle root.
+  - The 0.2 V bistable window is narrow (≈9.62–9.70 Hz), so the middle branch is
+    short and nearly merged with the upper branch, worsening root selection.
+  - **Robust routes for future work:** (a) *deflation* — after finding the upper
+    orbit at a frequency, deflate it (`G(R)/‖R−R_upper‖`) and re-solve to force a
+    different root; (b) a *wider fold* at higher forcing or a smaller air gap so
+    the branches separate; (c) a proper arclength predictor that steps *onto* the
+    middle branch from a fold point with a tangent that has turned. High |Kd|
+    (well-conditioned Jacobian) should be used throughout.
+  - Amplitude-controlled continuation (`cbc_middle.py`) matched only |X| (not
+    phase) so it was invasive — superseded by the above; do not reuse as-is.
 - **Higher harmonics.** CBC used H=1; odd harmonics were small (|X3/X1| < 0.02
   near resonance) but should be controlled (H=3) for quantitative branches.
 - **Amplitude calibration** of the ring-down demod under-reads ~2× vs the raw
