@@ -43,5 +43,9 @@ for name in data results generated; do
         echo "post-checkout: '$link' is a real directory, not a symlink; leaving it untouched." >&2
         continue
     fi
-    ln -sfn "$target" "$link"
+    # Relative target (computed lexically, -sm) so the repo is portable: copy the
+    # repo and its sibling store together, preserving their relative layout, and
+    # the links resolve on any machine regardless of absolute paths.
+    rel_target="$(realpath -sm --relative-to="$repo_root" "$target")"
+    ln -sfn "$rel_target" "$link"
 done

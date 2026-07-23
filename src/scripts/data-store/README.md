@@ -13,9 +13,12 @@ outputs of different lines of work.
   /workspace/cbc-duffing-rig-data/<branch>/{data,results,generated}
   ```
 
-- Inside the repo, `data/`, `results/`, and `generated/` are **symlinks** into
-  the current branch's bucket. Scripts read and write `data/` etc. exactly as
-  before — they never need to know about the store.
+- Inside the repo, `data/`, `results/`, and `generated/` are **relative
+  symlinks** into the current branch's bucket (e.g.
+  `data -> ../cbc-duffing-rig-data/<branch>/data`). Scripts read and write
+  `data/` etc. exactly as before — they never need to know about the store. The
+  links are relative so they resolve on any machine, independent of absolute
+  paths.
 
 - A committed **`post-checkout` hook** (`.githooks/post-checkout`) repoints those
   symlinks to match whichever branch you check out, creating the bucket on
@@ -38,6 +41,20 @@ src/scripts/data-store/setup-data-store.sh
 This migrates any existing `data/ results/ generated/` directories into the
 current branch's bucket, replaces them with symlinks, and activates the hook.
 It is idempotent — safe to re-run.
+
+## Copying to another machine
+
+The symlinks are **relative**, so portability just needs the repo and its
+sibling store copied together with their layout preserved:
+
+```
+<somewhere>/cbc-duffing-rig/          (the repo)
+<somewhere>/cbc-duffing-rig-data/     (the store, sibling of the repo)
+```
+
+Copy both (e.g. `rsync -a` the parent, or both dirs) and the links resolve with
+no path fix-up. `git clone` alone never brings the store (it is untracked) — run
+the setup script afterwards, then copy the store in.
 
 ## Configuration
 

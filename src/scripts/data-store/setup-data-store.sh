@@ -34,9 +34,17 @@ mkdir -p "$bucket"
 for name in data results generated; do
     link="$repo_root/$name"
     target="$bucket/$name"
+    # Relative target (lexical, -sm) so the repo+store pair is portable across
+    # machines; see .githooks/post-checkout and README.md.
+    rel_target="$(realpath -sm --relative-to="$repo_root" "$target")"
 
     if [ -L "$link" ]; then
-        echo "  $name: already a symlink -> $(readlink "$link"); skipping."
+        # Already a symlink: re-point it to the correct relative target. This
+        # makes the script self-healing and idempotent — e.g. it converts a
+        # previously absolute link to a relative one.
+        mkdir -p "$target"
+        ln -sfn "$rel_target" "$link"
+        echo "  $name: normalised existing symlink -> $rel_target"
         continue
     fi
 
@@ -57,8 +65,8 @@ for name in data results generated; do
         mkdir -p "$target"
     fi
 
-    ln -sfn "$target" "$link"
-    echo "  $name: symlink created -> $target"
+    ln -sfn "$rel_target" "$link"
+    echo "  $name: symlink created -> $rel_target"
 done
 
 echo
