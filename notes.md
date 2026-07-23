@@ -518,3 +518,22 @@ hard-constraints (prerequisite for energised closed-loop CBC/PLL/etc).
   Pushed both (main fast-forward; v1 force-with-lease after rebase).
 - Note: `main` and new branches start with empty buckets — past runs are not
   retroactively separated (never distinguished on disk).
+
+## 2026-07-23T16:02+00:00 Data store revision: relative symlinks + detached-HEAD no-op
+
+- Revised the branch-keyed data store (supersedes the absolute/detached-<sha>
+  design in the previous note). Store location unchanged
+  (`/workspace/cbc-duffing-rig-data/<branch>/…`, external sibling).
+- **Relative symlinks** now (`data -> ../cbc-duffing-rig-data/<branch>/data`,
+  via `realpath -sm --relative-to`) so a duplicated repo+store pair resolves on
+  any machine. Portability needs both dirs copied together, layout preserved
+  (git clone never brings the untracked store — run setup, then copy the store).
+- `setup-data-store.sh` is now self-healing: re-pointing existing symlinks, so a
+  re-run converts absolute→relative.
+- **Detached HEAD → hook is a no-op** (leaves symlinks on the last branch's
+  bucket). Reason: a rebase checks out commits detached internally; the old
+  detached-<sha> behaviour spawned a stray empty bucket per rebase and left the
+  symlinks pointing at it until the next switch. Data was never at risk (the
+  hook never moves bytes). setup refuses to run on a detached HEAD.
+- Infra lives on `main` (propagates to new branches); `v1-autonomous-claude`
+  rebased onto it. Both pushed.
