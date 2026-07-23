@@ -495,3 +495,26 @@ hard-constraints (prerequisite for energised closed-loop CBC/PLL/etc).
   (needs globalized deflation or homotopy). Report S6 documents the routes.
 - Updated report (mixed nonlinearity, 0.4V, middle-branch conclusion), findings,
   notes. Rig disarmed, gains 0, quiet.
+
+## 2026-07-23T15:47+00:00 Branch-keyed data store + provenance rule
+
+- Problem: untracked experiment data/figures (~30 MB) should persist and stay
+  isolated per git branch, plus off-machine backup (handled by David's own
+  mechanism, no script here).
+- Solution: real bytes moved to `/workspace/cbc-duffing-rig-data/<branch>/{data,
+  results,generated}`; repo paths are now gitignored symlinks. A committed
+  `.githooks/post-checkout` hook repoints them on branch switch (detached HEAD →
+  `detached-<sha>` bucket). `.gitignore` gained anchored `/data /results
+  /generated` (trailing-slash patterns don't match symlinks).
+- Activation is local (`core.hooksPath=.githooks`), so fresh clones run
+  `src/scripts/data-store/setup-data-store.sh` once (idempotent; migrates real
+  dirs, never clobbers).
+- Provenance rule added to AGENTS.md ("Data Provenance") on `main` so it
+  propagates to branches cut from main: every run writes `run_manifest.txt`
+  (commit + ISO timestamp + params); commit code before recording a run.
+- Landed infra + rule on `main` (2 commits), rebased `v1-autonomous-claude` onto
+  it (clean; AGENTS.md/.gitignore were byte-identical across branches), migrated
+  data to the v1 bucket, verified switch-swap (main bucket empty, v1 intact 25M).
+  Pushed both (main fast-forward; v1 force-with-lease after rebase).
+- Note: `main` and new branches start with empty buckets — past runs are not
+  retroactively separated (never distinguished on disk).
