@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+#
+# post-checkout hook: branch-keyed data store
+# ---------------------------------------------
+# Purpose: keep the repo's untracked data folders (data/ results/ generated/)
+# isolated per git branch. On every branch checkout, this hook repoints those
+# three paths (as symlinks) at the current branch's bucket inside an external
+# store, creating buckets on demand. Switching branch therefore swaps the data
+# underneath the working tree without any git-tracked file changing.
+#
+# See docs: AGENTS.md "Data Provenance" and src/scripts/data-store/README.md
+#
+# Git passes three args to post-checkout: <prev-HEAD> <new-HEAD> <is-branch>.
+# is-branch == 1 for a branch/switch checkout, 0 for a file checkout (which we
+# ignore, since file checkouts must not disturb the data symlinks).
+
+set -euo pipefail
+
+is_branch_checkout="${3:-0}"
+[ "$is_branch_checkout" = "1" ] || exit 0
+
+# External store root (override via .cbc-data.env at the repo root if desired).
+DATA_ROOT="/workspace/cbc-duffing-rig-data"
+repo_root="$(git rev-parse --show-toplevel)"
+[ -f "$repo_root/.cbc-data.env" ] && . "$repo_root/.cbc-data.env"
+
+# Determine the current branch; fall back to a per-commit bucket if detached.
+branch="$(git symbolic-ref --quiet --short HEAD || true)"
+if [ -z "$branch" ]; then
+    branch="detached-$(git rev-parse --short HEAD)"
+fi
+
+bucket="$DATA_ROOT/$branch"
+
+for name in data results generated; do
+    target="$bucket/$name"
+    mkdir -p "$target"
+    link="$repo_root/$name"
+    # Only manage the path if it is absent or already a symlink; never clobber a
+    # real directory (that would risk data loss — setup-data-store.sh migrates
+    # real dirs before the hook is ever relied upon).
+    if [ -e "$link" ] && [ ! -L "$link" ]; then
+        echo "post-checkout: '$link' is a real directory, not a symlink; leaving it untouched." >&2
+        continue
+    fi
+    ln -sfn "$target" "$link"
+done

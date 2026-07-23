@@ -34,6 +34,12 @@ shared/
 data/
 generated/
 results/
+# Branch-keyed data store: symlinks at the repo root (see
+# src/scripts/data-store/README.md). Anchored, no trailing slash so they match
+# symlinks as well as real directories.
+/data
+/generated
+/results
 *.csv
 *.npz
 *.npy
