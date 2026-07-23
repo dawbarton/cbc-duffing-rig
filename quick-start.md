@@ -95,3 +95,22 @@ existing checkout with `git submodule update --init --recursive`.
 - **Temporary fitted state (2026-07-22):** ADC0 is connected across DAC A and C
   for the commissioning loopback, not to its normal experiment signal. Restore
   the experiment wiring before interpreting ADC0 as the exciter current signal.
+
+## Closed-loop CBC (firmware 06545cb, PidController)
+
+- The `cbc-rig` firmware now selects `PidController` (feedback on the laser,
+  slot 8). Gains default to 0 → drives open-loop until set live over a persistent
+  connection: `ctrl_kp`, `ctrl_kd` (both **negative** to stabilise — the forward
+  path has negative gain), `ctrl_ki` (keep 0), `ctrl_tau_d` (≈3 ms). New source
+  `error`. Typical: Kp≈−0.1 V/mm, Kd≈−0.02 V/(mm/s).
+- CBC signal chain: `out = Kp(target−laser) + Kd d/dt(target−laser) + forcing`.
+  Set `forcing_coeffs` = the fixed external excitation; iterate `target_coeffs`
+  (the reference) so control → non-invasive. **Set `target_coeffs[0]` = the laser
+  operating point (~24.8 mm)** or Kp acts on a ~24.8 mm DC error and saturates.
+- Robust non-invasiveness corrector: damped fixed-point on the reference,
+  `R ← R + α(Rot(φ)·X − R)`, φ from the (pure-sine) forcing projection; α≈0.8.
+  Frequency-stepped + warm-started traces the stable branches and folds
+  (`src/scripts/cbc_sweep.py`). Newton/Broyden on (ω,a1,b1) is ill-conditioned
+  here (reference-phase gauge) — see the report before reusing it.
+- After any killed run, the firmware auto-disarms on TCP drop but gains persist:
+  clean up with `arm 0`, `ctrl_kp/kd/ki 0`, zero forcing/target/freq.

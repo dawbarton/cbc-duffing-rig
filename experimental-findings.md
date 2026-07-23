@@ -119,3 +119,18 @@ See `AGENTS.md` for fixed constants/limits and `quick-start.md` for operation.
 - CBC advantage demonstrated: non-invasive (true open-loop response) and free of
   the settling-induced false hysteresis that plagues open-loop stepped sweeps at
   Q≈155.
+
+## 2026-07-23 CBC at 0.2 V + middle-branch status
+
+- CBC forced FRF at forcing 0.2 V (Kp=-0.12, Kd=-0.025):
+  `results/2026-07-23-cbc-sweep-0p2.png`, data `data/2026-07-23-cbc-sweep-0p2/`.
+  **Peak ~830 µm bent to 9.70 Hz**; the softening overhang and the bistable
+  window widen with forcing to ≈9.62–9.70 Hz (vs ≈9.65–9.70 at 0.1 V). Tip span
+  at peak 24.0–25.6 mm (±0.8 mm) — safe. Non-invasive (<5 mV) off the fold.
+- **Unstable middle branch: NOT captured.** Frequency-stepping reaches only
+  stable branches. Amplitude-controlled continuation (`cbc_middle.py`) matched
+  |X|=A but not phase, so it was invasive (control 150–630 mV) — abandoned.
+  Needs a robust Newton corrector in a phase-anchored coordinate. See
+  `reports/2026-07-23-bifurcation-structure/report.md` §6.
+- Controller gains used: Kp∈[-0.1,-0.12] V/mm, Kd∈[-0.02,-0.025] V/(mm/s), both
+  negative (negative forward-path gain). tau_d=3 ms. Feedback on laser (slot 8).

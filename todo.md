@@ -10,40 +10,34 @@ nonlinearity); David to provide a micrometer stator-position proxy at power-on.
 Firmware `cd779ce` (protocol v3, PassThrough controller) is flashed and healthy.
 Decision points are flagged; David monitors with an emergency shut-off.
 
-Phase 0 — Bring-up (read-only done; tiny-drive after power-on)
-- [x] Read-only health check: firmware `cd779ce`, laser 24.81 mm in range,
-      counters baseline; historical latched trip (bit1) from an earlier laser
-      UART hiccup, clears on arm.
-- [ ] David powers exciter; record the gap proxy in experimental-findings.
-- [ ] Build a persistent-session stepped-sine acquisition + analysis harness
-      (arm, safety polling, abort-to-safe on any trip, NPZ save, plots).
-- [ ] Tiny-drive check (0.1 V pp sub-resonance): confirm beam responds (laser
-      motion + adc0 current), safety clears/holds with a moving beam.
+**STATUS 2026-07-23:** Phases 0–3 (stable-branch CBC) and 5 done; report at
+`reports/2026-07-23-bifurcation-structure/report.md`. Rig left disarmed, gains 0.
+Key results: f0=9.80 Hz, Q=155 (ζ=0.0032), softening backbone (−160 mHz to
+345 µm), CBC forced FRFs at 0.1 V & 0.2 V with folds (bistable ≈9.62–9.70 Hz at
+0.2 V, peak ~830 µm). Remaining: unstable middle branch, Floquet/ARX stability.
 
-Phase 1 — Linear characterisation (open-loop, 0.1 V pp)
-- [ ] Stepped-sine FRF ~3–15 Hz: locate f0, damping/Q, displacement sensitivity.
-      DECISION: centre subsequent sweep window on measured f0.
-
-Phase 2 — Nonlinear open-loop map (amplitude ladder, ≤ 2 V pp)
-- [ ] Stepped-sine FRFs up an amplitude ladder, each with up- and down-sweep to
-      detect hysteresis; extract backbone bending (expect softening) and folds.
-      DECISION: nonlinearity strength → proceed to CBC vs report that a smaller
-      (manual) air gap is needed.
-
-Phase 3 — Closed-loop CBC (firmware PID swap; energised feedback)
-- [ ] Swap ActiveController PassThrough→PID (as PD) in cbc-rig config.rs; build,
-      verify offline, flash, health-check.
-- [ ] Low-gain stable-branch bring-up; tune gains/margins; confirm
-      non-invasiveness (control spectrum ~0 at controlled harmonics).
-- [ ] Host-side Newton/Broyden + pseudo-arclength (H=3); trace the primary
-      resonance FRF including the unstable middle branch between the folds.
-
-Phase 4 — Cross-checks
-- [ ] PLL/phase-resonance backbone; ARX/Floquet stability + fold/PD
-      classification; compare methods and noise robustness.
-
-Phase 5 — Synthesis
-- [ ] Consolidated bifurcation diagram + report; update findings/quick-start.
+Phase 0 — Bring-up — DONE
+- [x] Health check; gap proxy 6.5 recorded; DAQ reset re-configured the
+      just-powered laser (stale-trip); first-light 0.1 Vpp confirmed response.
+Phase 1 — Linear characterisation — DONE
+- [x] Open-loop FRF located f0≈9.8 Hz; ring-down gave ζ=0.0032, Q=155 (the
+      reliable value — stepped-sweep Q was under-settled).
+Phase 2 — Nonlinearity — DONE (via ring-down, not open-loop ladder)
+- [x] High Q (25 s settle) makes open-loop stepped ladders give FALSE hysteresis;
+      used free-decay backbones instead → clean softening, folds predicted.
+Phase 3 — Closed-loop CBC — DONE (stable branches); middle branch OUTSTANDING
+- [x] Firmware PidController swap (helic-daq `06545cb`), flashed, active-damping
+      verified (ζ_cl linear in Kd, sign Kd<0).
+- [x] CBC forced FRF at 0.1 V and 0.2 V via a robust damped-fixed-point
+      corrector: softening overhang, folds, non-invasive (<5 mV) stable branches.
+- [ ] **Unstable middle branch** — needs a robust Newton/Broyden corrector in a
+      phase-anchored coordinate (the ill-conditioned reference-phase gauge broke
+      naive Newton; amplitude-only continuation was invasive). See report §6.
+Phase 4 — Cross-checks — OUTSTANDING
+- [ ] ARX/Floquet stability + fold classification from closed-loop data.
+- [ ] PLL/phase-resonance backbone as an independent cross-check of §3.
+Phase 5 — Synthesis — DONE
+- [x] Report + findings/quick-start updated; per-forcing CBC + backbone figures.
 
 ## Future
 

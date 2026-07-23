@@ -468,3 +468,16 @@ hard-constraints (prerequisite for energised closed-loop CBC/PLL/etc).
   Kd=-0.02, alpha 0.8. Expect softening S with up/down hysteresis at the folds.
 - Reminder: Bash tool default timeout 120s; use timeout= param for longer
   foreground rig runs. run_in_background needs the command passed DIRECTLY.
+
+## 2026-07-23T12:12+00:00 CBC forced FRF captured; middle branch outstanding; session synthesis
+
+- CBC forced FRF traced at forcing 0.1 V and 0.2 V with the robust fixed-point
+  corrector: softening resonance (peak bent to 9.70 Hz), folds + bistability
+  (≈9.62–9.70 Hz at 0.2 V, peak ~830 µm), non-invasive (<5 mV). Figures sent.
+- Unstable middle branch NOT captured: amplitude-controlled continuation
+  (cbc_middle.py) matched |X| only, not phase → invasive (150–630 mV control),
+  stopped. Needs a robust Newton corrector in a phase-anchored coordinate.
+- Wrote reports/2026-07-23-bifurcation-structure/report.md consolidating all
+  methods/results. Updated todo (Phases 0–3,5 done; middle branch + Floquet
+  outstanding), quick-start (CBC operation), experimental-findings.
+- Rig left DISARMED, gains 0, forcing/target 0, laser 24.82 mm — safe/quiet.
