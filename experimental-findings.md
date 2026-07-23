@@ -30,6 +30,49 @@ See `AGENTS.md` for fixed constants/limits and `quick-start.md` for operation.
 - Laser sensor quantisation ≈ 0.5 µm (limits SNR far below resonance at
   0.1 Vpp; resonance response will be ~10–50× larger and clean).
 
+## 2026-07-23 Linear modal parameters (Phase 1 + ring-down)
+
+- **Primary resonance f0 ≈ 9.80 Hz** at gap proxy 6.5 (near the top of the
+  expected 5–10 Hz band). Single clean mode (phase rolls 180°→0° through f0).
+- **Damping ζ ≈ 0.0032, Q ≈ 155** from a free-decay ring-down (0.1 Vpp),
+  exponential envelope fit — high confidence. Time constant **τ ≈ 5 s**, so
+  ~25 s to settle to 1%. Coarse stepped-sweep Q (≈36) was a severe
+  underestimate (peak under-resolved AND under-settled at 4 s dwell).
+- **Consequence:** open-loop stepped-sine near this resonance is impractical
+  and prone to *false hysteresis* from incomplete settling. Use ring-down /
+  closed-loop methods for the nonlinear regime.
+- Data: `data/2026-07-23-phase1-linear/` (sweep),
+  `data/2026-07-23-ringdown*/` (decays). Figures
+  `results/2026-07-23-phase1-frf.png`, `...-ringdown-0p1vpp.png`.
+
+## 2026-07-23 Nonlinearity: softening backbone (free-decay)
+
+- **Softening confirmed** even at 0.1 Vpp: free-decay instantaneous frequency
+  falls as amplitude rises (magnet–stator attraction). Composite backbone from
+  4 ring-downs (0.1/0.2/0.4/0.8 Vpp) collapses onto one curve: **~9.83 Hz at
+  30 µm → ~9.675 Hz at ~345 µm (Δf ≈ −160 mHz softening)**.
+  Figure `results/2026-07-23-backbone.png`; aggregate `...-backbone.npz`.
+- Backbone shift at ~100 µm (~75 mHz) already ≈ the linear half-width
+  f0/Q ≈ 63 mHz ⇒ **folds/bistability expected at only a few hundred µm**
+  amplitude — reachable at modest drive. This is the target for CBC.
+- The backbone is closer to **linear-in-amplitude** than the cubic-Duffing A²
+  law (poor A² fit) ⇒ the potential is magnetic/non-polynomial, not a textbook
+  cubic. Revisit the model form after CBC.
+- **Open-loop amplitude ceiling ~730 µm**: driving at fixed frequency
+  self-limits because softening detunes the response below the drive; reaching
+  higher amplitude needs resonance-tracking (PLL) or CBC.
+- CAVEAT: the ring-down amplitude axis (one-period demod envelope) under-reads
+  the true peak-to-peak span by ~2×; frequencies (the backbone shape) are
+  robust. Refine the envelope (Hilbert/peak-hold) before quantitative use.
+
+## Method note (2026-07-23)
+
+- Acquisition + quick-look analysis/plots are in Python/matplotlib (reuses the
+  proven safe-session harness in `src/lib/rig_session.py`); polished
+  CairoMakie/Julia figures deferred to the report stage. Flagged to David.
+- Python stdout is block-buffered to files; use `python -u` for live progress
+  on backgrounded runs.
+
 ## Operational notes established this session
 
 - The laser must be powered **before** the DAQ boots (or the DAQ reset after):

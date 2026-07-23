@@ -386,3 +386,23 @@ hard-constraints (prerequisite for energised closed-loop CBC/PLL/etc).
   is a stable measurement-baseline shift, not a drive-gain change. Flagged to
   David to confirm the power-amp mode on the hardware; monitor adc0 during runs.
 - Decision: proceed to Phase 1 linear FRF sweep (better SNR near resonance).
+
+## 2026-07-23T09:51+00:00 Open-loop characterisation complete: f0, Q, softening backbone
+
+- **Phase 1 linear FRF** (0.1 Vpp, 3-15 Hz stepped): resonance ~9.8 Hz, sharp.
+  Coarse-sweep Q=36 was under-resolved/under-settled.
+- **Ring-down** (0.1 Vpp @ 9.8 Hz): clean exponential decay =>
+  **zeta=0.0032, Q=155, f0=9.80 Hz, tau=5 s**. => open-loop stepped-sine needs
+  ~25 s/point; short dwells fake hysteresis. Motivates ring-down/closed-loop.
+- **Free-decay backbone**: softening confirmed from 0.1 Vpp. Composite of 4
+  ring-downs (0.1/0.2/0.4/0.8 Vpp) collapses onto one backbone, 9.83 Hz @ 30 um
+  -> 9.675 Hz @ 345 um (Δf ~ -160 mHz). Backbone ~ linear-in-amplitude, NOT
+  cubic A^2 (magnetic potential). Folds expected at a few hundred um (backbone
+  shift already ~ linear half-width at 100 um).
+- Open-loop amplitude self-limits ~730 um (softening detunes fixed-freq drive).
+- New reusable scripts: ringdown.py, plot_ringdown.py, plot_frf.py,
+  plot_backbone.py. rig_session unchanged. Figures sent to David.
+- Amplitude-axis caveat: demod envelope under-reads ~2x vs raw span; freq robust.
+- **Next: Phase 3 CBC.** Swap ActiveController PassThrough->PID in cbc-rig
+  config.rs; the high Q + softening make CBC the right tool for the forced FRF,
+  folds, and unstable middle branch. Full autonomy granted incl. closed-loop.
