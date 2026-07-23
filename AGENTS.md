@@ -122,6 +122,14 @@ The project is located in `/workspace/cbc-duffing-rig/` with the following subfo
 - `shared/`: scratch space for sharing files; not for long-term storage
 - `src/`: source code; one-off scripts in `src/scripts/`, reusable code in `src/lib/`
 
+## Data Provenance
+
+Experimental data and generated figures are not version-controlled (`.gitignore`). To preserve reproducibility:
+
+- Data lives in a **branch-keyed external store** `/workspace/cbc-duffing-rig-data/<branch>/{data,results,generated}`, symlinked into the repo. A committed `post-checkout` hook (`.githooks/`, activated once per clone via `src/scripts/data-store/setup-data-store.sh`) swaps the store to match the checked-out branch, keeping each branch's data isolated.
+- **Every experimental run records the producing commit.** Write a `run_manifest.txt` into the run's output folder containing `git rev-parse HEAD`, the ISO-8601 timestamp (`date -Iseconds`), and key parameters. Data must be reproducible from that commit plus the recorded parameters.
+- **Commit the producing code before recording a run** so the manifest references an immutable commit. If the tree is unavoidably dirty, note it in the manifest (append `-dirty`).
+
 ## Shared Folder
 
 If asked to share a file, copy it to the `/shared/` folder.
