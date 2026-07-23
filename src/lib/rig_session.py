@@ -18,11 +18,12 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
-from typing import Any, Sequence
+from typing import TYPE_CHECKING, Any, Sequence
 
 import numpy as np
 
-from helic_daq import Device
+if TYPE_CHECKING:  # avoid a hard dependency on the device lib for pure analysis
+    from helic_daq import Device
 
 
 # Faults that must stay exactly zero in steady state (see AGENTS.md Health).

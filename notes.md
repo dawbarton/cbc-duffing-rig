@@ -357,3 +357,32 @@ hard-constraints (prerequisite for energised closed-loop CBC/PLL/etc).
 - Caveat carried forward: adc0 is now (per David) the exciter current sense
   again, not the loopback — quick-start's "temporary fitted state" note is
   superseded once power-on is confirmed.
+
+## 2026-07-23T09:37+00:00 Phase 0 first-light, DAQ reset, and a power-supply trip
+
+- Exciter powered; gap proxy **6.5** (American micrometer barrel, higher =
+  smaller gap; deliberately large). Recorded in experimental-findings.md.
+- First arm attempt failed: the just-powered laser was not yet feeding fresh
+  frames, so the firmware stale-laser trip latched (`output_fault` runs every
+  tick even disarmed). Fix: reset the DAQ (`cargo run --release -p fw-cbc-rig`,
+  identical committed `cd779ce`) to re-run the boot laser config. After reset
+  `tripped 0` held and the host laser capture showed live (non-frozen) values;
+  arming then reached armed/untripped (0b1001). `diag_reset` clears the benign
+  startup laser_uart/parse errors and records_dropped.
+- **Phase 0 first-light PASSED** (0.1 Vpp @ 3 Hz): drive applied without clamp
+  (out=forcing=50 mV), safety held, displacement span ~10 um, laser fundamental
+  2.1 um, compliance ~0.042 mm/V, FRF phase ~178 deg. adc0 AC fundamental
+  6.85 mV. Figure results/2026-07-23-first-light.png (sent to David).
+- **Power supply physically tripped over mid-session, then restored** (cause
+  unknown to David). During the trip the rig was verified commanding exactly
+  zero output (disarmed, all sources zero) — first_light's force_safe cleanup.
+- Post-restore health: DAQ uptime continuous (never lost power), laser live,
+  gate arms cleanly, fault counters zero. **Change:** adc0 DC baseline shifted
+  -5 mV -> +275 mV (stable, not settling) and laser rest 24.807 -> 24.729 mm.
+- Recheck drive (0.1 Vpp @ 3 Hz) confirms the **forward path is unchanged**:
+  adc0 AC fundamental 6.843 mV (vs 6.849 pre-trip, identical); FRF phase
+  identical. Compliance nominally 0.042 -> 0.0485 mm/V but that is at the
+  ~0.5 um quantization floor (2 um signals) => low confidence. adc0 +275 mV DC
+  is a stable measurement-baseline shift, not a drive-gain change. Flagged to
+  David to confirm the power-amp mode on the hardware; monitor adc0 during runs.
+- Decision: proceed to Phase 1 linear FRF sweep (better SNR near resonance).

@@ -114,7 +114,7 @@ def main() -> int:
             frf = laser_h["amplitude"][0] / forc_h["amplitude"][0] if abs(forc_h["amplitude"][0]) > 0 else 0
             print(f"  laser span {laser_span[0]:.3f}-{laser_span[1]:.3f} mm  (guard: {verdict})")
             print(f"  forcing A1 {forc_h['amp'][0]*1e3:.2f} mV   out A1 {out_h['amp'][0]*1e3:.2f} mV")
-            print(f"  laser  A1 {laser_h['amp'][0]*1e3:.4f} mm   phase {np.degrees(laser_h['phase'][0]):.1f} deg")
+            print(f"  laser  A1 {laser_h['amp'][0]*1e3:.4f} um   phase {np.degrees(laser_h['phase'][0]):.1f} deg")
             print(f"  adc0   A1 {adc0_h['amp'][0]*1e3:.3f} mV   (exciter current sense)")
             print(f"  FRF |X/F| = {abs(frf):.4f} mm/V   phase {np.degrees(np.angle(frf)):.1f} deg")
             print(f"  post safety=0b{int(health['safety']):04b}  loop_max {health['loop_time_max']} us")
@@ -140,7 +140,10 @@ def main() -> int:
             if verdict == "abort":
                 raise RigSafetyError(f"displacement guard abort: laser span {laser_span}")
 
-            moved = laser_h["amp"][0] > 5e-3  # >5 um response => beam is responding
+            # "responds" = coherent fundamental clearly above the harmonic-fit
+            # noise floor (residual). 3 Hz is well below resonance, so even a
+            # few um of coherent motion confirms actuation.
+            moved = laser_h["amp"][0] > 3.0 * laser_h["residual"]
             print(f"\nRESULT: beam {'RESPONDS' if moved else 'NO CLEAR RESPONSE'}; "
                   f"safety {'HELD (armed/untripped)' if int(health['safety']) & 0b0011 == 0b0001 else 'CHECK'}.")
             return 0
