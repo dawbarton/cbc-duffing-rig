@@ -83,3 +83,21 @@ See `AGENTS.md` for fixed constants/limits and `quick-start.md` for operation.
   the host laser capture shows live (non-frozen) values before arming.
 - `diag_reset` clears the laser error counters and the startup
   `records_dropped` baseline; run it after boot before trusting health.
+
+## 2026-07-23 Closed-loop bring-up (PID firmware 06545cb)
+
+- Firmware `cbc-rig` PID controller enabled (helic-daq `06545cb`, branch
+  cbc-pid-controller): ActiveController=PidController, feedback on laser slot 8,
+  gains default 0 (open-loop until set live). Host now exposes ctrl_kp/ki/kd/
+  tau_d/ctrl_feedback and an `error` telemetry source (46 params, 15 sources).
+- **Loop verified by velocity-feedback active damping** (Kp=Ki=0, Kd only):
+  closed-loop ring-down ζ_cl is linear in Kd, ζ_cl ≈ 0.0037 + 1.15·|Kd|:
+  Kd=0→0.0037, −0.002→0.0062, +0.002→0.0013, −0.005→0.0099, −0.010→0.0152.
+- **Stabilising sign is Kd < 0** (and by the same negative forward-path gain,
+  Kp < 0 for correct-sign position tracking). Kd>0 de-damps toward instability.
+- Damping is precisely controllable: Kd=−0.010 gives ζ_cl≈0.015 (Q≈33),
+  τ_cl≈1.1 s — makes settling tractable and can stabilise unstable branches.
+- Data `data/2026-07-23-cbc-bringup/`, figure `results/2026-07-23-cbc-bringup.png`.
+- Note: after the PID reflash the DC operating point returned to laser≈24.807 mm
+  (the post-power-trip +275 mV adc0 / 24.73 mm shift did not persist across the
+  reflash) — consistent with it having been an amplifier power-up state.

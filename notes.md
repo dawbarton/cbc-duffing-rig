@@ -406,3 +406,20 @@ hard-constraints (prerequisite for energised closed-loop CBC/PLL/etc).
 - **Next: Phase 3 CBC.** Swap ActiveController PassThrough->PID in cbc-rig
   config.rs; the high Q + softening make CBC the right tool for the forced FRF,
   folds, and unstable middle branch. Full autonomy granted incl. closed-loop.
+
+## 2026-07-23T10:02+00:00 Firmware PID swap + closed-loop bring-up (CBC Phase 3 start)
+
+- Swapped cbc-rig ActiveController PassThrough->PidController (config.rs only;
+  shared helic-core untouched). Gains default 0; feedback=laser slot 8; tau_d
+  3ms; controller output clamped +/-1V under the +/-1.952V gate. Committed
+  helic-daq branch cbc-pid-controller @ 06545cb. Offline: fmt/clippy/build(x3)/
+  RT-layout all pass. Flashed; banner 06545cb; 46 params, 15 sources, laser
+  live, disarmed/untripped.
+- Closed-loop bring-up (cbc_bringup.py): velocity feedback (Kd only) gives
+  active damping linear in Kd; stabilising sign Kd<0; ζ_cl 0.0037->0.015 over
+  Kd 0->-0.01. Kp<0 similarly for position tracking (negative plant gain). All
+  captures safe. Loop wiring/sign/stability confirmed. Figure sent to David.
+- Next: implement host-side CBC corrector (Newton/Broyden on reference Fourier
+  harmonics for non-invasiveness) + pseudo-arclength, at fixed forcing, to trace
+  the forced FRF incl. the unstable middle branch and both folds. Use Kd,Kp<0
+  for stabilisation. Target forcing ~0.2-0.4 Vpp (folds expected few-hundred um).
