@@ -423,3 +423,28 @@ hard-constraints (prerequisite for energised closed-loop CBC/PLL/etc).
   harmonics for non-invasiveness) + pseudo-arclength, at fixed forcing, to trace
   the forced FRF incl. the unstable middle branch and both folds. Use Kd,Kp<0
   for stabilisation. Target forcing ~0.2-0.4 Vpp (folds expected few-hundred um).
+
+## 2026-07-23T10:23+00:00 CBC corrector implemented; continuation running
+
+- Implemented src/scripts/cbc_continuation.py: fixed-forcing CBC of the forced
+  FRF, fundamental (H=1). Unknowns u=(omega,a1,b1); reference r=r0+a1cos+b1sin
+  (r0=laser operating point, set to avoid Kp acting on ~24.8mm DC error);
+  fixed external forcing sets the level; controller Kp,Kd<0 stabilises.
+- **Residual = control fundamental (out-forcing), driven to 0** = non-invasive.
+  Chosen over X-r because the firmware reference phase is continuous across freq
+  changes, so the projection basis need not match it (FD Jacobian absorbs the
+  fixed rotation). Repeatability of the control fundamental is excellent
+  (~0.1 mV std), so FD Jacobians are trustworthy.
+- The reference->control map is ill-conditioned (cond~185) and nonlinear over a
+  step => modified-Newton diverged. Fixed with **Broyden + backtracking line
+  search + regularised lstsq**; validated single-point at 10.4 Hz (ctrl_fund
+  0.58 mV, response 37 um = reference, matching the reference=0 forced response).
+- Perf: carry the Broyden J across continuation points (skip per-point FD) so
+  arclength points converge in ~1-2 evals. Pseudo-arclength in scaled u.
+- **Launch lesson:** for run_in_background, pass the command DIRECTLY. The
+  earlier "(cmd) & sleep 1; echo" wrapper made the task tracker report completion
+  after 1s while the real run continued detached; and pkill -f "cbc_continuation"
+  matched my own shell. On process kill the firmware auto-disarms (TCP drop) but
+  gains persist -> always clean up (arm 0, gains 0, forcing/target 0) after.
+- First CBC branch running: forcing 0.1V, 10.4 Hz down through resonance,
+  ds=0.2, Kp=-0.1 Kd=-0.02, settle 3.5s. Expect softening S-curve with folds.
