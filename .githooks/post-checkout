@@ -24,10 +24,16 @@ DATA_ROOT="/workspace/cbc-duffing-rig-data"
 repo_root="$(git rev-parse --show-toplevel)"
 [ -f "$repo_root/.cbc-data.env" ] && . "$repo_root/.cbc-data.env"
 
-# Determine the current branch; fall back to a per-commit bucket if detached.
+# Determine the current branch. On a detached HEAD, do nothing: leave the
+# existing symlinks pointing at whatever branch they last tracked. This is
+# deliberate — a detached HEAD is transient (notably the internal checkouts git
+# performs during a rebase), and minting per-commit buckets there would both
+# clutter the store and leave the symlinks pointing at an empty bucket once the
+# rebase reattaches HEAD. Inspecting an old commit thus shows the current
+# branch's data, which is the pragmatic choice.
 branch="$(git symbolic-ref --quiet --short HEAD || true)"
 if [ -z "$branch" ]; then
-    branch="detached-$(git rev-parse --short HEAD)"
+    exit 0
 fi
 
 bucket="$DATA_ROOT/$branch"

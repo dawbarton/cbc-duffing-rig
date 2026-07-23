@@ -23,7 +23,10 @@ outputs of different lines of work.
 - A committed **`post-checkout` hook** (`.githooks/post-checkout`) repoints those
   symlinks to match whichever branch you check out, creating the bucket on
   demand. Switch branch → the data swaps underneath you, with no git-tracked
-  file changing. A detached HEAD gets its own `detached-<sha>` bucket.
+  file changing. On a **detached HEAD the hook is a no-op** (the symlinks keep
+  pointing at the last branch's bucket) — this keeps rebases, which check out
+  commits detached internally, from spawning stray buckets or leaving the links
+  pointing at an empty one.
 
 The symlinks themselves are gitignored (anchored `/data`, `/results`,
 `/generated` entries — trailing-slash patterns do not match symlinks), so git

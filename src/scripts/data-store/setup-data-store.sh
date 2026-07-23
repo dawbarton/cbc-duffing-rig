@@ -20,7 +20,8 @@ repo_root="$(git rev-parse --show-toplevel)"
 
 branch="$(git symbolic-ref --quiet --short HEAD || true)"
 if [ -z "$branch" ]; then
-    branch="detached-$(git rev-parse --short HEAD)"
+    echo "HEAD is detached; check out a branch before running setup." >&2
+    exit 1
 fi
 bucket="$DATA_ROOT/$branch"
 
