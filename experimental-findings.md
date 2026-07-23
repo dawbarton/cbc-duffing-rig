@@ -134,3 +134,20 @@ See `AGENTS.md` for fixed constants/limits and `quick-start.md` for operation.
   `reports/2026-07-23-bifurcation-structure/report.md` §6.
 - Controller gains used: Kp∈[-0.1,-0.12] V/mm, Kd∈[-0.02,-0.025] V/(mm/s), both
   negative (negative forward-path gain). tau_d=3 ms. Feedback on laser (slot 8).
+
+## 2026-07-23 CBC at 0.4 V — MIXED nonlinearity (softening → hardening)
+
+- CBC forced FRF at 0.4 V (`results/2026-07-23-cbc-sweep-0p4.png`, data
+  `data/2026-07-23-cbc-sweep-0p4/`): large fold, **peak ~1471 µm at 9.78 Hz**,
+  broad bistable overhang ≈9.78–9.9 Hz, stable branches ~600 µm apart.
+- **KEY PHYSICAL FINDING — mixed nonlinearity.** Peak vs forcing:
+  0.1 V→448 µm@9.70, 0.2 V→832 µm@9.70, 0.4 V→1471 µm@9.78. Combined with the
+  ring-down backbone (9.83@30 µm→9.675@345 µm), the resonance frequency vs
+  amplitude **softens to a minimum ~9.67 Hz around 400–800 µm then hardens back
+  up to 9.78 Hz by ~1.5 mm**. This softening→hardening turn-over is the magnetic
+  (non-polynomial) potential. Family figure
+  `results/2026-07-23-cbc-forcing-family.png`.
+- Tip span at 0.4 V peak 23.3–26.3 mm (±1.5 mm) — safe (guard ±9 mm).
+- Middle branch: even at 0.4 V (wide window) multi-start fixed-ω Newton funnels
+  to the lower branch; upper start fails to converge. Root selection remains the
+  blocker (see report §6). Middle branch NOT captured.

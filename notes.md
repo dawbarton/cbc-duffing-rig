@@ -481,3 +481,17 @@ hard-constraints (prerequisite for energised closed-loop CBC/PLL/etc).
   methods/results. Updated todo (Phases 0–3,5 done; middle branch + Floquet
   outstanding), quick-start (CBC operation), experimental-findings.
 - Rig left DISARMED, gains 0, forcing/target 0, laser 24.82 mm — safe/quiet.
+
+## 2026-07-23T15:05+00:00 CBC 0.4V: mixed nonlinearity found; middle branch concluded
+
+- 0.4V CBC sweep: large fold, peak 1471um@9.78Hz, wide bistability (~9.78-9.9Hz,
+  branches ~600um apart). **Mixed nonlinearity discovered**: peak drifts 9.70
+  (<=830um) -> 9.78 (1471um) => softening then HARDENING (magnetic potential;
+  backbone turns over ~500-800um). Family figure sent to David.
+- Middle branch: extensive attempts (Broyden/GN/trust-region/equilibration/
+  fixed-point/amplitude-control/fixed-omega Newton/deflation/multi-start, high-Kd
+  conditioning cond->1). Root selection is the blocker: Newton funnels to the
+  dominant/lower orbit even with wide 0.4V separation. Concluded as future work
+  (needs globalized deflation or homotopy). Report S6 documents the routes.
+- Updated report (mixed nonlinearity, 0.4V, middle-branch conclusion), findings,
+  notes. Rig disarmed, gains 0, quiet.

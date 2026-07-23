@@ -24,11 +24,18 @@ characterised by four complementary methods, escalating in capability:
 | Nonlinearity | **softening** (magnetic) | free-decay backbone |
 | Backbone shift | −160 mHz over 0→345 µm | 4 ring-downs (collapse) |
 | Forced folds (0.2 V) | bistable ≈ **9.62–9.70 Hz**, peak ≈ 830 µm | CBC |
+| Nonlinearity type | **mixed: softening then hardening** (peak 9.80→9.70→9.78 Hz as amplitude grows to 1.47 mm) | CBC family |
 
-The key methodological finding: at Q ≈ 155 the open-loop settling time is ≈ 25 s,
-so **open-loop stepped-sine is impractical and produces false hysteresis**;
-ring-down and control-based continuation (CBC) are the appropriate tools and
-agree with each other.
+Two key findings:
+1. **Methodological:** at Q ≈ 155 the open-loop settling time is ≈ 25 s, so
+   **open-loop stepped-sine is impractical and produces false hysteresis**;
+   ring-down and control-based continuation (CBC) are the appropriate tools and
+   agree with each other.
+2. **Physical:** the nonlinearity is **not simply softening** — the CBC forced
+   response bends down (softening) up to ~800 µm but the peak moves back up
+   (hardening) by 1.47 mm at 0.4 V forcing. This softening→hardening turn-over is
+   characteristic of the magnetic (non-polynomial) potential, and means the
+   backbone has a minimum-frequency turning point around ~500–800 µm.
 
 ---
 
@@ -83,11 +90,18 @@ including the softening overhang and folds:
 - **0.1 V** (`results/2026-07-23-cbc-sweep-0p1.png`): peak ~450 µm bent to
   9.70 Hz; narrow bistability ≈ 9.65–9.70 Hz.
 - **0.2 V** (`results/2026-07-23-cbc-sweep-0p2.png`): peak ~830 µm bent to
-  9.70 Hz; **wider bistability ≈ 9.62–9.70 Hz**. The fold and overhang grow
-  strongly with forcing, as expected for a Duffing fold.
+  9.70 Hz; **wider bistability ≈ 9.62–9.70 Hz**.
+- **0.4 V** (`results/2026-07-23-cbc-sweep-0p4.png`): a **large fold**, peak
+  ~1471 µm now at **9.78 Hz** with a broad bistable overhang ≈ 9.78–9.9 Hz and
+  the two stable branches separated by ~600 µm. The peak moving back *up* in
+  frequency is the **hardening** regime — see the family figure
+  `results/2026-07-23-cbc-forcing-family.png`.
 
-CBC is non-invasive and free of the settling-induced false hysteresis that
-would corrupt an open-loop sweep at this Q — the central advantage demonstrated.
+The forcing family (0.1/0.2/0.4 V) shows the resonance first bending down
+(softening, consistent with the ring-down backbone) then the peak returning
+upward (hardening) — a **mixed nonlinearity**. CBC is non-invasive and free of
+the settling-induced false hysteresis that would corrupt an open-loop sweep at
+this Q — the central advantage demonstrated.
 
 ## 5. Comparison of methods
 
@@ -119,7 +133,10 @@ large-amplitude resonance near 9.68–9.70 Hz).
     converges cleanly but, from any starting amplitude, lands on the **dominant
     (upper) stable orbit** — it does not select the unstable middle root.
   - The 0.2 V bistable window is narrow (≈9.62–9.70 Hz), so the middle branch is
-    short and nearly merged with the upper branch, worsening root selection.
+    short and nearly merged with the upper branch, worsening root selection. At
+    0.4 V the window is *wide* (branches ~600 µm apart) yet multi-start fixed-ω
+    Newton still funnels to the lower branch (and the upper start fails to
+    converge), so wider separation alone does not solve root selection.
   - **Robust routes for future work:** (a) *deflation* — after finding the upper
     orbit at a frequency, deflate it (`G(R)/‖R−R_upper‖`) and re-solve to force a
     different root; (b) a *wider fold* at higher forcing or a smaller air gap so
