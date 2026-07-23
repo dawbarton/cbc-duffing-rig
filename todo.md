@@ -39,6 +39,15 @@ Phase 4 — Cross-checks — OUTSTANDING
 Phase 5 — Synthesis — DONE
 - [x] Report + findings/quick-start updated; per-forcing CBC + backbone figures.
 
+## Infrastructure
+
+- **Branch-keyed data store** (2026-07-23): untracked `data/ results/ generated/`
+  now live in `/workspace/cbc-duffing-rig-data/<branch>/…`, symlinked into the
+  repo; a `post-checkout` hook swaps them per branch. Fresh clones must run
+  `src/scripts/data-store/setup-data-store.sh` once. See AGENTS.md "Data
+  Provenance" and `src/scripts/data-store/README.md`. New rule: every run writes
+  a `run_manifest.txt` (commit + timestamp + params).
+
 ## Future
 
 - Select the closed-loop stabilising controller (`ActiveController` swap from
